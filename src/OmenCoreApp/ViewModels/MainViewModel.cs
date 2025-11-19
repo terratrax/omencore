@@ -37,17 +37,20 @@ namespace OmenCore.ViewModels
         private readonly SystemRestoreService _systemRestoreService;
         private readonly OmenGamingHubCleanupService _hubCleanupService;
         private readonly SystemInfoService _systemInfoService;
+        private readonly AutoUpdateService _autoUpdateService;
         private readonly AsyncRelayCommand _applyUndervoltCommand;
         private readonly AsyncRelayCommand _resetUndervoltCommand;
         private readonly AsyncRelayCommand _refreshUndervoltCommand;
         private readonly AsyncRelayCommand _createRestorePointCommand;
         private readonly AsyncRelayCommand _cleanupOmenHubCommand;
+        private readonly AsyncRelayCommand _installUpdateCommand;
         private readonly RelayCommand _takeUndervoltControlCommand;
         private readonly RelayCommand _respectExternalUndervoltCommand;
         private readonly RelayCommand _stopMacroRecordingInternalCommand;
         private readonly RelayCommand _saveRecordedMacroInternalCommand;
         private readonly RelayCommand _applyLogitechColorInternalCommand;
         private readonly RelayCommand _syncCorsairThemeInternalCommand;
+        private readonly RelayCommand _openReleaseNotesCommand;
         private readonly INotifyCollectionChanged? _macroBufferNotifier;
         private readonly StringBuilder _logBuffer = new();
 
@@ -83,6 +86,11 @@ namespace OmenCore.ViewModels
         private bool _cleanupKillProcesses = true;
         private bool _cleanupPreserveFirewall = true;
         private bool _cleanupDryRun;
+        private VersionInfo? _availableUpdate;
+        private bool _updateBannerVisible;
+        private string _updateBannerMessage = string.Empty;
+        private bool _updateDownloadInProgress;
+        private string _appVersionLabel = "v0.0.0";
 
         public ObservableCollection<FanPreset> FanPresets { get; } = new();
         public ObservableCollection<FanCurvePoint> CustomFanCurve { get; } = new();
@@ -99,6 +107,56 @@ namespace OmenCore.ViewModels
         public ObservableCollection<string> OmenCleanupSteps { get; } = new();
         
         public SystemInfo SystemInfo { get; private set; }
+        public string AppVersionLabel
+        {
+            get => _appVersionLabel;
+            private set
+            {
+                if (_appVersionLabel != value)
+                {
+                    _appVersionLabel = value;
+                    OnPropertyChanged(nameof(AppVersionLabel));
+                }
+            }
+        }
+        public bool UpdateBannerVisible
+        {
+            get => _updateBannerVisible;
+            private set
+            {
+                if (_updateBannerVisible != value)
+                {
+                    _updateBannerVisible = value;
+                    OnPropertyChanged(nameof(UpdateBannerVisible));
+                }
+            }
+        }
+        public string UpdateBannerMessage
+        {
+            get => _updateBannerMessage;
+            private set
+            {
+                if (_updateBannerMessage != value)
+                {
+                    _updateBannerMessage = value;
+                    OnPropertyChanged(nameof(UpdateBannerMessage));
+                }
+            }
+        }
+        public bool UpdateDownloadInProgress
+        {
+            get => _updateDownloadInProgress;
+            private set
+            {
+                if (_updateDownloadInProgress != value)
+                {
+                    _updateDownloadInProgress = value;
+                    OnPropertyChanged(nameof(UpdateDownloadInProgress));
+                    OnPropertyChanged(nameof(UpdateActionLabel));
+                }
+            }
+        }
+        public string UpdateActionLabel => UpdateDownloadInProgress ? "Installing..." : "Install Update";
 
         public ReadOnlyObservableCollection<ThermalSample> ThermalSamples { get; }
         public ReadOnlyObservableCollection<FanTelemetry> FanTelemetry { get; }
@@ -602,6 +660,8 @@ namespace OmenCore.ViewModels
         public ICommand ApplyLogitechColorCommand { get; }
         public ICommand CreateRestorePointCommand { get; }
         public ICommand CleanupOmenHubCommand { get; }
+        public ICommand InstallUpdateCommand { get; }
+        public ICommand OpenReleaseNotesCommand { get; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -648,6 +708,8 @@ namespace OmenCore.ViewModels
             _hubCleanupService = new OmenGamingHubCleanupService(_logging);
             _systemInfoService = new SystemInfoService(_logging);
             SystemInfo = _systemInfoService.GetSystemInfo();
+            _autoUpdateService = new AutoUpdateService(_logging);
+            AppVersionLabel = $"v{_autoUpdateService.GetCurrentVersion()}";
             _corsairDeviceService.Discover();
             _logitechDeviceService.Discover();
 
@@ -705,6 +767,10 @@ namespace OmenCore.ViewModels
             CreateRestorePointCommand = _createRestorePointCommand;
             _cleanupOmenHubCommand = new AsyncRelayCommand(_ => RunOmenCleanupAsync(), _ => !CleanupInProgress);
             CleanupOmenHubCommand = _cleanupOmenHubCommand;
+            _installUpdateCommand = new AsyncRelayCommand(_ => InstallUpdateAsync(), _ => _availableUpdate != null && !_updateDownloadInProgress);
+            InstallUpdateCommand = _installUpdateCommand;
+            _openReleaseNotesCommand = new RelayCommand(_ => OpenReleaseNotes(), _ => CanOpenReleaseNotes());
+            OpenReleaseNotesCommand = _openReleaseNotesCommand;
 
             _logging.LogEmitted += HandleLogLine;
 
@@ -721,6 +787,101 @@ namespace OmenCore.ViewModels
             {
                 _macroBufferNotifier.CollectionChanged += RecordingBufferOnCollectionChanged;
             }
+            _ = CheckForUpdatesBannerAsync();
+        }
+
+        private async Task CheckForUpdatesBannerAsync()
+        {
+            try
+            {
+                var result = await _autoUpdateService.CheckForUpdatesAsync();
+                if (result.UpdateAvailable && result.LatestVersion != null)
+                {
+                    _availableUpdate = result.LatestVersion;
+                    UpdateBannerMessage = $"Update available: v{_availableUpdate.VersionString} (Current {AppVersionLabel})";
+                    UpdateBannerVisible = true;
+                }
+                else
+                {
+                    _availableUpdate = null;
+                    UpdateBannerVisible = false;
+                    UpdateBannerMessage = string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Update check failed: {ex.Message}");
+            }
+            finally
+            {
+                RefreshUpdateCommands();
+            }
+        }
+
+        private async Task InstallUpdateAsync()
+        {
+            if (_availableUpdate == null)
+            {
+                return;
+            }
+
+            try
+            {
+                UpdateDownloadInProgress = true;
+                UpdateBannerMessage = $"Downloading v{_availableUpdate.VersionString}...";
+                var installerPath = await _autoUpdateService.DownloadUpdateAsync(_availableUpdate);
+                if (installerPath == null)
+                {
+                    UpdateBannerMessage = "Download failed. Use Release Notes to grab the installer.";
+                    return;
+                }
+
+                UpdateBannerMessage = "Installing update...";
+                var installResult = await _autoUpdateService.InstallUpdateAsync(installerPath);
+                if (!installResult.Success && !string.IsNullOrWhiteSpace(installResult.Message))
+                {
+                    UpdateBannerMessage = installResult.Message;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging.Error("Update installation failed", ex);
+                UpdateBannerMessage = $"Update failed: {ex.Message}";
+            }
+            finally
+            {
+                UpdateDownloadInProgress = false;
+                RefreshUpdateCommands();
+            }
+        }
+
+        private bool CanOpenReleaseNotes() => _availableUpdate != null && !string.IsNullOrWhiteSpace(_availableUpdate.ChangelogUrl);
+
+        private void OpenReleaseNotes()
+        {
+            if (!CanOpenReleaseNotes())
+            {
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _availableUpdate!.ChangelogUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logging.Error("Failed to open release notes", ex);
+            }
+        }
+
+        private void RefreshUpdateCommands()
+        {
+            _installUpdateCommand.RaiseCanExecuteChanged();
+            _openReleaseNotesCommand.RaiseCanExecuteChanged();
         }
 
         private void HydrateCollections()
@@ -1164,6 +1325,7 @@ namespace OmenCore.ViewModels
                 _macroBufferNotifier.CollectionChanged -= RecordingBufferOnCollectionChanged;
             }
             _logging.LogEmitted -= HandleLogLine;
+            _autoUpdateService.Dispose();
         }
     }
 }

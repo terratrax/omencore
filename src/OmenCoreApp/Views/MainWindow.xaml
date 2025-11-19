@@ -30,7 +30,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
                         <Image Source="/Assets/logo-small.png" Width="32" Height="32" Margin="0,0,12,0" />
                         <TextBlock Text="OmenCore" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="v1.0.0" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,1,0,0" Opacity="0.8" />
+                        <TextBlock Text="{Binding AppVersionLabel}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,1,0,0" Opacity="0.8" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,8,0">
                         <Button Content="−" Width="40" Height="32" Click="MinimizeButton_Click" Style="{StaticResource SecondaryButton}" Margin="4,0" FontSize="16" ToolTip="Minimize" />
@@ -155,8 +155,42 @@
                         <RowDefinition Height="240" />
                     </Grid.RowDefinitions>
 
-                    <!-- Non-HP Omen Warning -->
+                    <!-- Update Banner + Non-HP Warning -->
                     <StackPanel Grid.Row="0">
+                        <Border Background="#221FC3FF"
+                                BorderBrush="{StaticResource AccentBlueBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16"
+                                Margin="24,12,24,8"
+                                Visibility="{Binding UpdateBannerVisible, Converter={StaticResource BoolToVisibility}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="⬆" FontSize="22" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                    <StackPanel>
+                                        <TextBlock Text="Update Ready" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding UpdateBannerMessage}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="{Binding UpdateActionLabel}"
+                                            Command="{Binding InstallUpdateCommand}"
+                                            Style="{StaticResource ModernButton}"
+                                        Width="150"
+                                        Height="34"
+                                        Margin="0,0,8,0" />
+                                    <Button Content="Release Notes"
+                                            Command="{Binding OpenReleaseNotesCommand}"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Width="130"
+                                            Height="34" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                         <Border Background="#44FF9800" 
                                 BorderBrush="#FF9800" 
                                 BorderThickness="2" 

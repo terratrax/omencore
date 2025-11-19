@@ -31,6 +31,14 @@ jobs:
     - name: Build installer artifacts
       shell: pwsh
       run: ./build-installer.ps1 -Configuration Release -Runtime win-x64 -SingleFile
+    
+    - name: Verify installer artifact
+      shell: pwsh
+      run: |
+        $installer = "artifacts/OmenCoreSetup-${{ steps.version.outputs.value }}.exe"
+        if (-not (Test-Path $installer)) {
+          throw "Expected installer was not created: $installer"
+        }
       
     - name: Create Release
       uses: softprops/action-gh-release@v1

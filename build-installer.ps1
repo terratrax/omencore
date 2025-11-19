@@ -48,6 +48,7 @@ if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $zipPath
 Write-Host "Created $zipPath" -ForegroundColor Green
 
+# Resolve Inno Setup CLI
 $iscc = Get-Command iscc -ErrorAction SilentlyContinue
 if (-not $iscc) {
     $defaultPaths = @(
@@ -64,15 +65,21 @@ if (-not $iscc) {
     }
 }
 
-if ($iscc) {
-    $installer = Join-Path $artifactsDir "OmenCoreSetup-$version.exe"
-    if (Test-Path $installer) { Remove-Item $installer -Force }
-    & $iscc.FullName "installer/OmenCoreInstaller.iss" "/DMyAppVersion=$version"
-    $generated = Join-Path $artifactsDir "OmenCoreSetup.exe"
-    if (Test-Path $generated) {
-        Rename-Item $generated $installer -Force
-    }
-    Write-Host "Created installer $installer" -ForegroundColor Green
-} else {
-    Write-Warning "Inno Setup (iscc) not found. Install it to build OmenCoreSetup.exe"
+if (-not $iscc) {
+    throw "Inno Setup (iscc) not found. Install Inno Setup 6 to build the installer."
 }
+
+$installer = Join-Path $artifactsDir "OmenCoreSetup-$version.exe"
+if (Test-Path $installer) { Remove-Item $installer -Force }
+& $iscc.FullName "installer/OmenCoreInstaller.iss" "/DMyAppVersion=$version"
+$generated = Join-Path $artifactsDir "OmenCoreSetup.exe"
+if (-not (Test-Path $generated)) {
+    throw "Inno Setup compiler did not produce the expected output at $generated"
+}
+Rename-Item $generated $installer -Force
+
+if (-not (Test-Path $installer)) {
+    throw "Failed to create installer at $installer"
+}
+
+Write-Host "Created installer $installer" -ForegroundColor Green
