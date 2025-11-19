@@ -22,4 +22,9 @@
   <ItemGroup>
     <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\VERSION.txt" Link="VERSION.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

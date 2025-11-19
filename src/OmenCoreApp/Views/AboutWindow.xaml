@@ -9,7 +9,8 @@
     <Border Background="{StaticResource BackgroundDarkBrush}" 
             BorderBrush="{StaticResource BorderBrush}" 
             BorderThickness="1" 
-            CornerRadius="12">
+            CornerRadius="12"
+            MouseLeftButtonDown="Border_MouseLeftButtonDown">
         <Grid Margin="24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -29,12 +30,18 @@
                     </StackPanel>
                 </DockPanel>
                 <Button Grid.Column="1"
-                        Content="✕"
-                        Width="36"
+                        Width="110"
                         Height="36"
-                        Style="{StaticResource SecondaryButton}"
-                        ToolTip="Close"
-                        Click="CloseClicked" />
+                        Style="{StaticResource ModernButton}"
+                        Background="{StaticResource AccentBlueBrush}"
+                        Foreground="{StaticResource TextPrimaryBrush}"
+                        ToolTip="Close this window"
+                        Click="CloseClicked">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Close" FontWeight="SemiBold"/>
+                        <TextBlock Text="✕" Margin="6,0,0,0" FontSize="14"/>
+                    </StackPanel>
+                </Button>
             </Grid>
             
             <StackPanel Grid.Row="1">

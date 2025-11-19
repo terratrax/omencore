@@ -49,10 +49,25 @@ Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $zipPath
 Write-Host "Created $zipPath" -ForegroundColor Green
 
 $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+if (-not $iscc) {
+    $defaultPaths = @(
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+        "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
+    )
+    foreach ($candidate in $defaultPaths) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        if (Test-Path $candidate) {
+            $iscc = Get-Item $candidate
+            break
+        }
+    }
+}
+
 if ($iscc) {
     $installer = Join-Path $artifactsDir "OmenCoreSetup-$version.exe"
     if (Test-Path $installer) { Remove-Item $installer -Force }
-    & $iscc.Source "installer/OmenCoreInstaller.iss" "/DMyAppVersion=$version"
+    & $iscc.FullName "installer/OmenCoreInstaller.iss" "/DMyAppVersion=$version"
     $generated = Join-Path $artifactsDir "OmenCoreSetup.exe"
     if (Test-Path $generated) {
         Rename-Item $generated $installer -Force

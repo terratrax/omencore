@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
@@ -19,26 +20,26 @@ namespace OmenCore.Services
         private readonly HttpClient _httpClient;
         private readonly string _updateCheckUrl;
         private readonly string _downloadDirectory;
-        
-        // Current version of the application
-        private static readonly Version CurrentVersion = new Version(1, 0, 0);
+        private readonly Version _currentVersion;
         
         public event EventHandler<UpdateCheckResult>? UpdateCheckCompleted;
         public event EventHandler<UpdateDownloadProgress>? DownloadProgressChanged;
         public event EventHandler<UpdateInstallResult>? InstallCompleted;
         
-        public AutoUpdateService(LoggingService logging, string updateCheckUrl = "https://api.github.com/repos/yourusername/omencore/releases/latest")
+        public AutoUpdateService(LoggingService logging, string updateCheckUrl = "https://api.github.com/repos/theantipopau/omencore/releases/latest")
         {
             _logging = logging;
             _httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"OmenCore/{CurrentVersion}");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "OmenCore-Updater");
+            _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
             
             _updateCheckUrl = updateCheckUrl;
             _downloadDirectory = Path.Combine(Path.GetTempPath(), "OmenCore", "Updates");
             Directory.CreateDirectory(_downloadDirectory);
+            _currentVersion = LoadCurrentVersion();
         }
         
         /// <summary>
@@ -48,7 +49,7 @@ namespace OmenCore.Services
         {
             var result = new UpdateCheckResult
             {
-                CurrentVersion = new VersionInfo { Version = CurrentVersion }
+                CurrentVersion = new VersionInfo { Version = _currentVersion }
             };
             
             try
@@ -91,25 +92,60 @@ namespace OmenCore.Services
                 }
                 
                 // Check if newer version available
-                if (latestVersion > CurrentVersion)
+                if (latestVersion > _currentVersion)
                 {
                     result.UpdateAvailable = true;
                     result.Status = UpdateStatus.UpdateAvailable;
                     result.LatestVersion = new VersionInfo
                     {
                         Version = latestVersion,
-                        ReleaseNotes = root.TryGetProperty("body", out var body) ? body.GetString() ?? "" : ""
+                        ReleaseNotes = root.TryGetProperty("body", out var body) ? body.GetString() ?? string.Empty : string.Empty,
+                        ReleaseDate = root.TryGetProperty("published_at", out var published) && published.ValueKind == JsonValueKind.String
+                            ? DateTime.TryParse(published.GetString(), out var publishedDate) ? publishedDate : DateTime.UtcNow
+                            : DateTime.UtcNow,
+                        ChangelogUrl = root.TryGetProperty("html_url", out var htmlUrl) ? htmlUrl.GetString() ?? string.Empty : string.Empty
                     };
                     
                     // Get download URL from assets
                     if (root.TryGetProperty("assets", out var assets) && assets.GetArrayLength() > 0)
                     {
-                        var firstAsset = assets[0];
-                        result.LatestVersion.DownloadUrl = firstAsset.GetProperty("browser_download_url").GetString() ?? "";
-                        result.LatestVersion.FileSize = firstAsset.TryGetProperty("size", out var size) ? size.GetInt64() : 0;
+                        JsonElement selectedAsset = default;
+                        var foundAsset = false;
+                        foreach (var asset in assets.EnumerateArray())
+                        {
+                            var name = asset.GetProperty("name").GetString() ?? string.Empty;
+                            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || name.Contains("Setup", StringComparison.OrdinalIgnoreCase))
+                            {
+                                selectedAsset = asset;
+                                foundAsset = true;
+                                break;
+                            }
+
+                            if (!foundAsset && name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                            {
+                                selectedAsset = asset;
+                                foundAsset = true;
+                            }
+                        }
+
+                        if (foundAsset)
+                        {
+                            result.LatestVersion.DownloadUrl = selectedAsset.GetProperty("browser_download_url").GetString() ?? string.Empty;
+                            var size = selectedAsset.TryGetProperty("size", out var sizeElement) ? sizeElement.GetInt64() : 0;
+                            result.LatestVersion.FileSize = size;
+                            result.LatestVersion.FileSizeFormatted = FormatFileSize(size);
+                        }
                     }
                     
-                    result.Message = $"Update available: v{latestVersion}";
+                    if (string.IsNullOrWhiteSpace(result.LatestVersion.DownloadUrl))
+                    {
+                        result.Message = "Update available on GitHub releases.";
+                    }
+                    else
+                    {
+                        result.Message = $"Update available: v{latestVersion}";
+                    }
+                    
                     _logging.Info(result.Message);
                 }
                 else
@@ -145,6 +181,11 @@ namespace OmenCore.Services
             try
             {
                 _logging.Info($"Downloading update {versionInfo.VersionString}...");
+                if (string.IsNullOrWhiteSpace(versionInfo.DownloadUrl))
+                {
+                    _logging.Warn("No download URL provided for the requested update.");
+                    return null;
+                }
                 
                 var fileName = $"OmenCore-{versionInfo.VersionString}-Setup.exe";
                 var downloadPath = Path.Combine(_downloadDirectory, fileName);
@@ -275,7 +316,7 @@ namespace OmenCore.Services
         /// <summary>
         /// Get the current version of the application
         /// </summary>
-        public Version GetCurrentVersion() => CurrentVersion;
+        public Version GetCurrentVersion() => _currentVersion;
         
         private string ComputeSha256Hash(string filePath)
         {
@@ -288,6 +329,53 @@ namespace OmenCore.Services
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        private Version LoadCurrentVersion()
+        {
+            try
+            {
+                var versionFile = Path.Combine(AppContext.BaseDirectory, "VERSION.txt");
+                if (File.Exists(versionFile))
+                {
+                    var text = File.ReadAllLines(versionFile);
+                    foreach (var line in text)
+                    {
+                        var candidate = line.Trim();
+                        if (Version.TryParse(candidate, out var fileVersion))
+                        {
+                            return fileVersion;
+                        }
+                    }
+                }
+
+                var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                return assemblyVersion ?? new Version(1, 0, 0);
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Falling back to default version: {ex.Message}");
+                return new Version(1, 0, 0);
+            }
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes <= 0)
+            {
+                return "0 B";
+            }
+
+            string[] units = { "B", "KB", "MB", "GB" };
+            var order = 0;
+            double length = bytes;
+            while (length >= 1024 && order < units.Length - 1)
+            {
+                order++;
+                length /= 1024;
+            }
+
+            return $"{length:0.##} {units[order]}";
         }
     }
 }

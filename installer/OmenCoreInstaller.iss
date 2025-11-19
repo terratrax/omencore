@@ -14,10 +14,10 @@ AppPublisherURL="https://github.com/theantipopau/omencore"
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-SetupIconFile=src\OmenCoreApp\Assets\OmenCore.ico
+SetupIconFile=..\src\OmenCoreApp\Assets\OmenCore.ico
 Compression=lzma
 SolidCompression=yes
-OutputDir=artifacts
+OutputDir=..\\artifacts
 OutputBaseFilename=OmenCoreSetup
 PrivilegesRequired=admin
 WizardStyle=modern
@@ -29,7 +29,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "publish\\win-x64\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\\publish\\win-x64\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"; WorkingDir: "{app}"

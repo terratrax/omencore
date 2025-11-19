@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using OmenCore.Services;
 
@@ -24,8 +26,7 @@ namespace OmenCore.Views
             
             _isCheckingUpdates = true;
             CheckUpdatesButton.IsEnabled = false;
-            UpdateStatusText.Text = "Checking for updates...";
-            UpdateStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+            SetStatus("Checking for updates...", "TextSecondaryBrush");
             
             try
             {
@@ -33,42 +34,55 @@ namespace OmenCore.Views
                 
                 if (result.UpdateAvailable && result.LatestVersion != null)
                 {
-                    UpdateStatusText.Text = $"Update available: v{result.LatestVersion.VersionString}";
-                    UpdateStatusText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessBrush");
-                    
+                    var latest = result.LatestVersion;
+                    SetStatus($"Update available: v{latest.VersionString}", "SuccessBrush");
+
+                    if (string.IsNullOrWhiteSpace(latest.DownloadUrl))
+                    {
+                        var openRelease = MessageBox.Show(
+                            "A new version is available on GitHub. Open the release page now?",
+                            "Update Available",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information);
+
+                        if (openRelease == MessageBoxResult.Yes)
+                        {
+                            OpenUrl(latest.ChangelogUrl);
+                        }
+
+                        return;
+                    }
+
                     var msgResult = MessageBox.Show(
-                        $"A new version is available!\n\nCurrent: {result.CurrentVersion.VersionString}\nLatest: {result.LatestVersion.VersionString}\n\nWould you like to download and install it now?",
+                        $"A new version is available!\n\nCurrent: {result.CurrentVersion.VersionString}\nLatest: {latest.VersionString}\n\nWould you like to download and install it now?",
                         "Update Available",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Information);
-                        
+
                     if (msgResult == MessageBoxResult.Yes)
                     {
-                        UpdateStatusText.Text = "Downloading update...";
-                        var installerPath = await _updateService.DownloadUpdateAsync(result.LatestVersion);
-                        
+                        SetStatus("Downloading update...", "TextSecondaryBrush");
+                        var installerPath = await _updateService.DownloadUpdateAsync(latest);
+
                         if (installerPath != null)
                         {
-                            UpdateStatusText.Text = "Installing update...";
+                            SetStatus("Installing update...", "TextSecondaryBrush");
                             await _updateService.InstallUpdateAsync(installerPath);
                         }
                         else
                         {
-                            UpdateStatusText.Text = "Download failed.";
-                            UpdateStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentBrush");
+                            SetStatus("Download failed. Try again or grab it from GitHub releases.", "AccentBrush");
                         }
                     }
                 }
                 else
                 {
-                    UpdateStatusText.Text = result.Message;
-                    UpdateStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+                    SetStatus(result.Message, "TextSecondaryBrush");
                 }
             }
             catch (Exception ex)
             {
-                UpdateStatusText.Text = $"Update check failed: {ex.Message}";
-                UpdateStatusText.Foreground = (System.Windows.Media.Brush)FindResource("AccentBrush");
+                SetStatus($"Update check failed: {ex.Message}", "AccentBrush");
             }
             finally
             {
@@ -98,6 +112,37 @@ namespace OmenCore.Views
             {
                 Close();
             }
+        }
+
+        private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                DragMove();
+            }
+        }
+
+        private void SetStatus(string message, string brushResourceKey)
+        {
+            UpdateStatusText.Text = message;
+            if (FindResource(brushResourceKey) is Brush brush)
+            {
+                UpdateStatusText.Foreground = brush;
+            }
+        }
+
+        private void OpenUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
         }
     }
 }
