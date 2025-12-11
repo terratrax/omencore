@@ -43,13 +43,13 @@
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0" Foreground="{StaticResource AccentBrush}"/>
+                    <Path Data="{StaticResource IconPerformance}" Width="16" Height="16" Fill="{StaticResource AccentBrush}" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding CurrentPerformanceMode, FallbackValue=Auto}" 
                                FontSize="13" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentBrush}" 
                                VerticalAlignment="Center"/>
                     <Rectangle Width="1" Height="18" Fill="{StaticResource BorderBrush}" Margin="14,0"/>
-                    <TextBlock Text="🌀" FontSize="14" Margin="0,0,8,0"/>
+                    <Path Data="{StaticResource IconFan}" Width="14" Height="14" Fill="{StaticResource AccentBlueBrush}" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding CurrentFanMode, FallbackValue=Auto}" 
                                FontSize="13" FontWeight="SemiBold"
                                Foreground="{StaticResource TextPrimaryBrush}" 
@@ -233,10 +233,12 @@
                 Padding="48" 
                 Visibility="{Binding MonitoringLowOverheadMode, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="⚡" 
-                           FontSize="48" 
-                           HorizontalAlignment="Center" 
-                           Margin="0,0,0,16"/>
+                <Path Data="{StaticResource IconPerformance}" 
+                      Width="48" Height="48" 
+                      Fill="{StaticResource AccentBrush}" 
+                      Stretch="Uniform"
+                      HorizontalAlignment="Center" 
+                      Margin="0,0,0,16"/>
                 <TextBlock Text="Reduced CPU Usage Mode" 
                            Style="{StaticResource Heading2}"
                            HorizontalAlignment="Center" 

@@ -1090,8 +1090,29 @@ namespace OmenCore.ViewModels
                 {
                     _availableUpdate = null;
                     _updateInstallBlocked = false;
-                    UpdateBannerVisible = showStatus;
-                    UpdateBannerMessage = showStatus ? "You are running the latest version." : string.Empty;
+                    if (showStatus)
+                    {
+                        UpdateBannerMessage = "You are running the latest version.";
+                        UpdateBannerVisible = true;
+                        // Auto-hide after 3 seconds
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(3000);
+                            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                if (UpdateBannerMessage == "You are running the latest version.")
+                                {
+                                    UpdateBannerVisible = false;
+                                    UpdateBannerMessage = string.Empty;
+                                }
+                            });
+                        });
+                    }
+                    else
+                    {
+                        UpdateBannerVisible = false;
+                        UpdateBannerMessage = string.Empty;
+                    }
                 }
             }
             catch (Exception ex)

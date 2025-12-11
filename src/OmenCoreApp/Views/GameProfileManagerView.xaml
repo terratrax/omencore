@@ -184,21 +184,37 @@
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button Content="➕ New Profile"
-                                Command="{Binding CreateProfileCommand}"
-                                Margin="0,0,0,4"/>
-                        <Button Content="📋 Duplicate"
-                                Command="{Binding DuplicateProfileCommand}"
-                                Margin="0,0,0,4"/>
-                        <Button Content="🗑 Delete"
-                                Command="{Binding DeleteProfileCommand}"
-                                Margin="0,0,0,4"/>
+                        <Button Command="{Binding CreateProfileCommand}" Margin="0,0,0,4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="+" FontSize="14" FontWeight="Bold" Margin="0,0,6,0" Foreground="#4CAF50"/>
+                                <TextBlock Text="New Profile"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding DuplicateProfileCommand}" Margin="0,0,0,4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⊕" FontSize="12" Margin="0,0,6,0" Foreground="#45C7FF"/>
+                                <TextBlock Text="Duplicate"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding DeleteProfileCommand}" Margin="0,0,0,4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="×" FontSize="14" FontWeight="Bold" Margin="0,0,6,0" Foreground="#F44336"/>
+                                <TextBlock Text="Delete"/>
+                            </StackPanel>
+                        </Button>
                         <Separator Margin="0,8"/>
-                        <Button Content="📥 Import Profiles"
-                                Command="{Binding ImportProfilesCommand}"
-                                Margin="0,0,0,4"/>
-                        <Button Content="📤 Export Profiles"
-                                Command="{Binding ExportProfilesCommand}"/>
+                        <Button Command="{Binding ImportProfilesCommand}" Margin="0,0,0,4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="↓" FontSize="14" FontWeight="Bold" Margin="0,0,6,0" Foreground="#8C6CFF"/>
+                                <TextBlock Text="Import Profiles"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ExportProfilesCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="↑" FontSize="14" FontWeight="Bold" Margin="0,0,6,0" Foreground="#8C6CFF"/>
+                                <TextBlock Text="Export Profiles"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
