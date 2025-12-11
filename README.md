@@ -4,9 +4,10 @@
 
 OmenCore replaces HP OMEN Gaming Hub with a focused, privacy-respecting desktop application for managing thermals, performance, RGB lighting, and peripherals. Built with WPF on .NET 8, it provides professional-grade hardware control without bloat, telemetry, or mandatory sign-ins.
 
-[![Version](https://img.shields.io/badge/version-1.0.0.4-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v1.0.0.4)
+[![Version](https://img.shields.io/badge/version-1.0.0.5-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v1.0.0.5)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![Website](https://img.shields.io/badge/website-omencore.info-brightgreen.svg)](https://omencore.info)
 
 ![OmenCore Screenshot](docs/screenshots/main-window.png)
 
@@ -121,13 +122,13 @@ OmenCore replaces HP OMEN Gaming Hub with a focused, privacy-respecting desktop 
 ## 🚀 Installation
 
 ### Option 1: Installer (Recommended)
-1. Download `OmenCoreSetup-1.0.0.4.exe` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
+1. Download `OmenCoreSetup-1.0.0.5.exe` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
 2. Run installer as Administrator
 3. Select "Install WinRing0 driver" task (recommended)
 4. Launch OmenCore from Start Menu or Desktop
 
 ### Option 2: Portable ZIP
-1. Download `OmenCore-1.0.0.4-win-x64.zip` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
+1. Download `OmenCore-1.0.0.5-win-x64.zip` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
 2. Extract to `C:\OmenCore` (or preferred location)
 3. Right-click `OmenCore.exe` → Run as Administrator
 4. Manually install [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases) for WinRing0 driver
