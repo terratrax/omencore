@@ -253,8 +253,8 @@ cd src\OmenCoreApp\bin\Release\net8.0-windows10.0.19041.0
 pwsh ./build-installer.ps1 -Configuration Release -Runtime win-x64 -SingleFile
 
 # Outputs:
-# - artifacts/OmenCore-1.0.0.6-win-x64.zip
-# - artifacts/OmenCoreSetup-1.0.0.6.exe
+# - artifacts/OmenCore-1.0.0.7-win-x64.zip
+# - artifacts/OmenCoreSetup-1.0.0.7.exe
 ```
 
 ### Run Tests
@@ -275,12 +275,12 @@ dotnet test src/OmenCoreApp.Tests/OmenCoreApp.Tests.csproj
 
 1. **Update version** in `VERSION.txt`:
   ```
-  1.0.0.6
+  1.0.0.7
   ```
 
 2. **Create changelog entry** in `CHANGELOG.md`:
   ```markdown
-  ## [1.0.0.6] - 2025-12-11
+  ## [1.0.0.7] - 2025-12-11
   ### Added
   - New feature description
   ### Fixed
@@ -290,10 +290,10 @@ dotnet test src/OmenCoreApp.Tests/OmenCoreApp.Tests.csproj
 3. **Commit and tag**:
   ```bash
   git add VERSION.txt CHANGELOG.md
-  git commit -m "Bump version to 1.0.0.6"
-  git tag v1.0.0.6
+  git commit -m "Bump version to 1.0.0.7"
+  git tag v1.0.0.7
   git push origin main
-  git push origin v1.0.0.6
+  git push origin v1.0.0.7
   ```
 
 4. **GitHub Actions** automatically:
