@@ -60,7 +60,7 @@ OmenCore replaces HP OMEN Gaming Hub with a focused, privacy-respecting desktop 
 - **In-app update checker** polls GitHub releases every 6 hours
 - **SHA256 verification** required for security (updates rejected without hash)
 - **One-click install** with download progress and integrity validation
-- **Manual fallback** if automated install blocked
+- **Manual fallback** if automated install blocked (hash missing)
 
 ---
 
@@ -79,7 +79,7 @@ OmenCore replaces HP OMEN Gaming Hub with a focused, privacy-respecting desktop 
 | **Network Booster** | ❌ Out of scope | Use router/Windows QoS |
 | **Game Library** | ❌ Out of scope | Use Steam/Epic/Xbox app |
 | **Omen Oasis** | ❌ Out of scope | Cloud gaming elsewhere |
-| **Per-Game Profiles** | 🔜 Planned v1.1 | Auto-switch on game detect |
+| **Per-Game Profiles** | ✅ Available | Auto-switch on game detect |
 | **Overlay (FPS/Temps)** | 🔜 Planned v1.2 | In-game OSD |
 
 **Verdict**: OmenCore covers **90% of daily Gaming Hub usage** with better performance, no telemetry, and full offline operation.
@@ -122,13 +122,13 @@ OmenCore replaces HP OMEN Gaming Hub with a focused, privacy-respecting desktop 
 ## 🚀 Installation
 
 ### Option 1: Installer (Recommended)
-1. Download `OmenCoreSetup-1.0.0.5.exe` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
+1. Download `OmenCoreSetup-1.0.0.6.exe` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
 2. Run installer as Administrator
 3. Select "Install WinRing0 driver" task (recommended)
 4. Launch OmenCore from Start Menu or Desktop
 
 ### Option 2: Portable ZIP
-1. Download `OmenCore-1.0.0.5-win-x64.zip` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
+1. Download `OmenCore-1.0.0.6-win-x64.zip` from [Releases](https://github.com/theantipopau/omencore/releases/latest)
 2. Extract to `C:\OmenCore` (or preferred location)
 3. Right-click `OmenCore.exe` → Run as Administrator
 4. Manually install [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases) for WinRing0 driver
@@ -236,8 +236,8 @@ cd src\OmenCoreApp\bin\Release\net8.0-windows10.0.19041.0
 pwsh ./build-installer.ps1 -Configuration Release -Runtime win-x64 -SingleFile
 
 # Outputs:
-# - artifacts/OmenCore-1.0.0.4-win-x64.zip
-# - artifacts/OmenCoreSetup-1.0.0.4.exe
+# - artifacts/OmenCore-1.0.0.6-win-x64.zip
+# - artifacts/OmenCoreSetup-1.0.0.6.exe
 ```
 
 ### Run Tests
@@ -257,27 +257,27 @@ dotnet test src/OmenCoreApp.Tests/OmenCoreApp.Tests.csproj
 ## 📦 Release Process
 
 1. **Update version** in `VERSION.txt`:
-   ```
-   1.0.0.5
-   ```
+  ```
+  1.0.0.6
+  ```
 
 2. **Create changelog entry** in `CHANGELOG.md`:
-   ```markdown
-   ## [1.0.0.5] - 2025-12-XX
-   ### Added
-   - New feature description
-   ### Fixed
-   - Bug fix description
-   ```
+  ```markdown
+  ## [1.0.0.6] - 2025-12-11
+  ### Added
+  - New feature description
+  ### Fixed
+  - Bug fix description
+  ```
 
 3. **Commit and tag**:
-   ```bash
-   git add VERSION.txt CHANGELOG.md
-   git commit -m "Bump version to 1.0.0.5"
-   git tag v1.0.0.5
-   git push origin main
-   git push origin v1.0.0.5
-   ```
+  ```bash
+  git add VERSION.txt CHANGELOG.md
+  git commit -m "Bump version to 1.0.0.6"
+  git tag v1.0.0.6
+  git push origin main
+  git push origin v1.0.0.6
+  ```
 
 4. **GitHub Actions** automatically:
    - Builds Release configuration
@@ -295,7 +295,7 @@ dotnet test src/OmenCoreApp.Tests/OmenCoreApp.Tests.csproj
    - Fixed issue 1
    - Fixed issue 2
 
-   SHA256: <paste SHA256 hash of OmenCoreSetup-1.0.0.5.exe>
+  SHA256: 54323D1F2F92086988A95EA7BD3D85CFDCC2F2F9348DA294443C7B6EB8AB6B23
    ```
    **⚠️ Include SHA256 hash** or in-app updater will require manual download.
 
