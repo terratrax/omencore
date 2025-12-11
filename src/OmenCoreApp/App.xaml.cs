@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -31,8 +32,10 @@ namespace OmenCore
         {
             base.OnStartup(e);
             Logging.Initialize();
-            var version = typeof(App).Assembly.GetName().Version;
-            Logging.Info($"OmenCore v1.0.0.5 starting up (Assembly: {version?.ToString(3) ?? "Unknown"})");
+            var asm = Assembly.GetExecutingAssembly();
+            var fileVer = asm.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "unknown";
+            var asmVer = asm.GetName().Version?.ToString() ?? "unknown";
+            Logging.Info($"OmenCore v{fileVer} starting up (Assembly: {asmVer})");
 
             // Check for WinRing0 driver availability
             CheckDriverStatus();

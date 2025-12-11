@@ -28,95 +28,95 @@
             
             <!-- Custom Title Bar -->
             <Border Grid.Row="0" Background="{StaticResource SurfaceDarkBrush}" CornerRadius="12,12,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <Grid Height="48">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
-                        <Image Source="pack://application:,,,/Assets/logo-small.png" Width="32" Height="32" Margin="0,0,12,0" />
-                        <TextBlock Text="OmenCore" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding AppVersionLabel}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,1,0,0" Opacity="0.8" />
+                <Grid Height="40">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
+                        <Image Source="pack://application:,,,/Assets/logo-small.png" Width="28" Height="28" Margin="0,0,10,0" />
+                        <TextBlock Text="OmenCore" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding AppVersionLabel}" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,1,0,0" Opacity="0.8" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,8,0">
-                        <Button Content="−" Width="40" Height="32" Click="MinimizeButton_Click" Style="{StaticResource SecondaryButton}" Margin="4,0" FontSize="16" ToolTip="Minimize" />
-                        <Button x:Name="MaximizeButton" Content="□" Width="40" Height="32" Click="MaximizeButton_Click" Style="{StaticResource SecondaryButton}" Margin="4,0" FontSize="14" ToolTip="Maximize" />
-                        <Button Content="✕" Width="40" Height="32" Click="CloseButton_Click" Style="{StaticResource SecondaryButton}" Margin="4,0" FontSize="14" ToolTip="Close" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,4,0">
+                        <Button Content="─" Width="46" Height="28" Click="MinimizeButton_Click" Style="{StaticResource SecondaryButton}" Margin="1,0" FontSize="14" ToolTip="Minimize" Padding="0" />
+                        <Button x:Name="MaximizeButton" Content="□" Width="46" Height="28" Click="MaximizeButton_Click" Style="{StaticResource SecondaryButton}" Margin="1,0" FontSize="13" ToolTip="Maximize" Padding="0" />
+                        <Button Content="✕" Width="46" Height="28" Click="CloseButton_Click" Style="{StaticResource SecondaryButton}" Margin="1,0" FontSize="13" ToolTip="Close" Padding="0" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="260" MinWidth="240" MaxWidth="320" />
+                    <ColumnDefinition Width="240" MinWidth="220" MaxWidth="300" />
                     <ColumnDefinition Width="*" MinWidth="800" />
                 </Grid.ColumnDefinitions>
 
                 <!-- Sidebar -->
                 <Border Grid.Column="0" Background="{StaticResource SurfaceDarkBrush}" CornerRadius="0,0,0,12">
-                    <DockPanel LastChildFill="True" Margin="20">
-                        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,20" HorizontalAlignment="Center">
-                            <Image Source="pack://application:,,,/Assets/logo.png" Width="100" Height="100" Stretch="Uniform" />
-                            <TextBlock Text="OmenCore" Foreground="{StaticResource TextPrimaryBrush}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,12,0,0" />
-                            <TextBlock Text="Gaming Control Center" Foreground="{StaticResource TextTertiaryBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                    <DockPanel LastChildFill="True" Margin="16,12,16,12">
+                        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8" HorizontalAlignment="Center">
+                            <Image Source="pack://application:,,,/Assets/logo.png" Width="56" Height="56" Stretch="Uniform" />
+                            <TextBlock Text="OmenCore" Foreground="{StaticResource TextPrimaryBrush}" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBlock Text="Gaming Control" Foreground="{StaticResource TextTertiaryBrush}" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0" />
                             
                             <!-- System Status Indicator -->
-                            <Border Background="{StaticResource SurfaceDarkBrush}"
+                            <Border Background="{StaticResource SurfaceMediumBrush}"
                                     BorderBrush="{StaticResource AccentBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="12"
-                                    Margin="0,16,0,0">
+                                    CornerRadius="6"
+                                    Padding="8,6"
+                                    Margin="0,6,0,0">
                                 <StackPanel>
-                                    <Grid Margin="0,0,0,8">
+                                    <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="⚡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource AccentBrush}"/>
+                                        <TextBlock Grid.Column="0" Text="⚡" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{StaticResource AccentBrush}"/>
                                         <StackPanel Grid.Column="1">
-                                            <TextBlock Text="PERFORMANCE" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                            <TextBlock Text="PERFORMANCE" FontSize="8" FontWeight="SemiBold" Foreground="{StaticResource TextTertiaryBrush}"/>
                                             <TextBlock Text="{Binding Dashboard.CurrentPerformanceMode, FallbackValue=Auto}" 
-                                                       FontSize="13" FontWeight="Bold" 
+                                                       FontSize="11" FontWeight="Bold" 
                                                        Foreground="{StaticResource AccentBrush}"/>
                                         </StackPanel>
                                     </Grid>
                                     
                                     <Rectangle Height="1" Fill="{StaticResource BorderBrush}" Margin="0,4"/>
                                     
-                                    <Grid Margin="0,8,0,0">
+                                    <Grid Margin="0,6,0,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="🌀" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="🌀" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1">
-                                            <TextBlock Text="FAN MODE" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                            <TextBlock Text="FAN MODE" FontSize="8" FontWeight="SemiBold" Foreground="{StaticResource TextTertiaryBrush}"/>
                                             <TextBlock Text="{Binding Dashboard.CurrentFanMode, FallbackValue=Auto}" 
-                                                       FontSize="13" FontWeight="Bold" 
+                                                       FontSize="11" FontWeight="Bold" 
                                                        Foreground="{StaticResource TextPrimaryBrush}"/>
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-                        <StackPanel DockPanel.Dock="Bottom" Margin="0,24,0,0">
-                            <Button Content="Export Config" Command="{Binding ExportConfigurationCommand}" Style="{StaticResource SecondaryButton}" Height="36" Margin="0,0,0,8" />
-                            <Button Content="Import Config" Command="{Binding ImportConfigurationCommand}" Style="{StaticResource SecondaryButton}" Height="36" Margin="0,0,0,8" />
-                            <Button Content="Settings" Command="{Binding OpenConfigFolderCommand}" Style="{StaticResource SecondaryButton}" Height="36" Margin="0,0,0,8" />
-                            <Button Content="About" Command="{Binding OpenAboutCommand}" Style="{StaticResource SecondaryButton}" Height="36" />
+                        <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                            <Button Content="Export Config" Command="{Binding ExportConfigurationCommand}" Style="{StaticResource SecondaryButton}" Height="30" Margin="0,0,0,5" FontSize="11" />
+                            <Button Content="Import Config" Command="{Binding ImportConfigurationCommand}" Style="{StaticResource SecondaryButton}" Height="30" Margin="0,0,0,5" FontSize="11" />
+                            <Button Content="Settings" Command="{Binding OpenConfigFolderCommand}" Style="{StaticResource SecondaryButton}" Height="30" Margin="0,0,0,5" FontSize="11" />
+                            <Button Content="About" Command="{Binding OpenAboutCommand}" Style="{StaticResource SecondaryButton}" Height="30" FontSize="11" />
                         </StackPanel>
                         <ScrollViewer VerticalScrollBarVisibility="Auto" 
                                       ScrollViewer.CanContentScroll="True"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       VirtualizingPanel.ScrollUnit="Pixel">
                             <StackPanel>
-                                <TextBlock Text="QUICK ACTIONS" Foreground="{StaticResource TextTertiaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,12" />
-                                <Button Content="Apply Fan Preset" Command="{Binding ApplyFanPresetCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,8" HorizontalContentAlignment="Left" Padding="12,10" />
-                                <Button Content="Performance Mode" Command="{Binding ApplyPerformanceModeCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,8" HorizontalContentAlignment="Left" Padding="12,10" />
-                                <Button Content="Apply Lighting" Command="{Binding ApplyLightingProfileCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,8" HorizontalContentAlignment="Left" Padding="12,10" />
-                                <Button Content="Gaming Mode" Command="{Binding GamingModeCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,8" HorizontalContentAlignment="Left" Padding="12,10" />
-                                <Button Content="Restore Defaults" Command="{Binding RestoreDefaultsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,16,0,0" HorizontalContentAlignment="Left" Padding="12,10" />
+                                <TextBlock Text="QUICK ACTIONS" Foreground="{StaticResource TextTertiaryBrush}" FontSize="9" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                <Button Content="Apply Fan Preset" Command="{Binding ApplyFanPresetCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" HorizontalContentAlignment="Left" Padding="8,6" FontSize="11" Height="30" />
+                                <Button Content="Performance Mode" Command="{Binding ApplyPerformanceModeCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" HorizontalContentAlignment="Left" Padding="8,6" FontSize="11" Height="30" />
+                                <Button Content="Apply Lighting" Command="{Binding ApplyLightingProfileCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" HorizontalContentAlignment="Left" Padding="8,6" FontSize="11" Height="30" />
+                                <Button Content="Gaming Mode" Command="{Binding GamingModeCommand}" Style="{StaticResource ModernButton}" Margin="0,0,0,5" HorizontalContentAlignment="Left" Padding="8,6" FontSize="11" Height="30" />
+                                <Button Content="Restore Defaults" Command="{Binding RestoreDefaultsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,10,0,0" HorizontalContentAlignment="Left" Padding="8,6" FontSize="11" Height="30" />
                                 
                                 <!-- System Information -->
-                                <TextBlock Text="SYSTEM INFO" Foreground="{StaticResource TextTertiaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,24,0,12" />
-                                <Border Style="{StaticResource SurfaceCard}" Padding="16">
+                                <TextBlock Text="SYSTEM INFO" Foreground="{StaticResource TextTertiaryBrush}" FontSize="9" FontWeight="SemiBold" Margin="0,12,0,6" />
+                                <Border Style="{StaticResource SurfaceCard}" Padding="10">
                                     <StackPanel>
                                         <!-- CPU -->
                                         <Grid Margin="0,0,0,8">
