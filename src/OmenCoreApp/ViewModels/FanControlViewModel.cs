@@ -20,6 +20,7 @@ namespace OmenCore.ViewModels
         private FanPreset? _selectedPreset;
         private string _customPresetName = "Custom";
         private double _currentTemperature;
+        private bool _suppressApplyOnSelection;
 
         public ObservableCollection<FanPreset> FanPresets { get; } = new();
         public ObservableCollection<FanCurvePoint> CustomFanCurve { get; } = new();
@@ -55,9 +56,29 @@ namespace OmenCore.ViewModels
                     if (value != null)
                     {
                         LoadCurve(value);
-                        ApplyPreset(value);
+                        if (!_suppressApplyOnSelection)
+                        {
+                            ApplyPreset(value);
+                        }
                     }
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Selects a preset by name without applying it (for external sync from GeneralViewModel).
+        /// Use this when the fan mode has already been applied externally.
+        /// </summary>
+        public void SelectPresetByNameNoApply(string presetName)
+        {
+            var preset = FanPresets.FirstOrDefault(p => 
+                p.Name.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+            
+            if (preset != null)
+            {
+                _suppressApplyOnSelection = true;
+                SelectedPreset = preset;
+                _suppressApplyOnSelection = false;
             }
         }
         

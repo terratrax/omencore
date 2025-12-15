@@ -18,10 +18,15 @@ namespace OmenCore.Services
     public class OmenKeyService : IDisposable
     {
         private readonly LoggingService _logging;
+        private readonly ConfigurationService? _configService;
         private IntPtr _hookHandle = IntPtr.Zero;
         private LowLevelKeyboardProc? _hookProc;
         private bool _isEnabled = true;
         private bool _disposed;
+        private OmenKeyAction _currentAction = OmenKeyAction.ToggleOmenCore;
+        private string _externalAppPath = string.Empty;
+        private DateTime _lastKeyPress = DateTime.MinValue;
+        private const int DebounceMs = 300;
 
         // Common key codes for OMEN key
         private const int VK_LAUNCH_APP2 = 0xB7;  // Media key often used by OEM
@@ -75,6 +80,26 @@ namespace OmenCore.Services
         /// Fired when the OMEN key is released.
         /// </summary>
         public event EventHandler? OmenKeyReleased;
+        
+        /// <summary>
+        /// Fired to toggle OmenCore window visibility
+        /// </summary>
+        public event EventHandler? ToggleOmenCoreRequested;
+        
+        /// <summary>
+        /// Fired to cycle performance modes
+        /// </summary>
+        public event EventHandler? CyclePerformanceRequested;
+        
+        /// <summary>
+        /// Fired to cycle fan modes
+        /// </summary>
+        public event EventHandler? CycleFanModeRequested;
+        
+        /// <summary>
+        /// Fired to toggle max cooling
+        /// </summary>
+        public event EventHandler? ToggleMaxCoolingRequested;
 
         /// <summary>
         /// Get or set whether OMEN key interception is enabled.
@@ -87,6 +112,34 @@ namespace OmenCore.Services
             {
                 _isEnabled = value;
                 _logging.Info($"OMEN key interception {(_isEnabled ? "enabled" : "disabled")}");
+                SaveSettings();
+            }
+        }
+        
+        /// <summary>
+        /// Get or set the action to perform when OMEN key is pressed
+        /// </summary>
+        public OmenKeyAction CurrentAction
+        {
+            get => _currentAction;
+            set
+            {
+                _currentAction = value;
+                _logging.Info($"OMEN key action set to: {value}");
+                SaveSettings();
+            }
+        }
+        
+        /// <summary>
+        /// Path to external application to launch (when action is LaunchExternalApp)
+        /// </summary>
+        public string ExternalAppPath
+        {
+            get => _externalAppPath;
+            set
+            {
+                _externalAppPath = value;
+                SaveSettings();
             }
         }
 
@@ -95,9 +148,11 @@ namespace OmenCore.Services
         /// </summary>
         public bool IsHookActive => _hookHandle != IntPtr.Zero;
 
-        public OmenKeyService(LoggingService logging)
+        public OmenKeyService(LoggingService logging, ConfigurationService? configService = null)
         {
             _logging = logging;
+            _configService = configService;
+            LoadSettings();
         }
 
         /// <summary>
@@ -170,10 +225,21 @@ namespace OmenCore.Services
                     
                     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
                     {
+                        // Debounce check
+                        if ((DateTime.Now - _lastKeyPress).TotalMilliseconds < DebounceMs)
+                        {
+                            return new IntPtr(1); // Block duplicate
+                        }
+                        _lastKeyPress = DateTime.Now;
+                        
                         _logging.Debug($"OMEN key detected: VK=0x{hookStruct.vkCode:X2}, Scan=0x{hookStruct.scanCode:X4}");
                         
-                        // Fire event on a separate thread to avoid blocking the hook
-                        Task.Run(() => OmenKeyPressed?.Invoke(this, EventArgs.Empty));
+                        // Fire event and execute action on a separate thread to avoid blocking the hook
+                        Task.Run(() => 
+                        {
+                            OmenKeyPressed?.Invoke(this, EventArgs.Empty);
+                            ExecuteAction();
+                        });
                         
                         // Return non-zero to block the key from reaching other apps
                         // This prevents OMEN Gaming Hub from launching
@@ -188,6 +254,100 @@ namespace OmenCore.Services
             }
 
             return CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+        }
+        
+        private void ExecuteAction()
+        {
+            _logging.Info($"OMEN key pressed - executing: {_currentAction}");
+            
+            switch (_currentAction)
+            {
+                case OmenKeyAction.ToggleOmenCore:
+                    ToggleOmenCoreRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                    
+                case OmenKeyAction.CyclePerformance:
+                    CyclePerformanceRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                    
+                case OmenKeyAction.CycleFanMode:
+                    CycleFanModeRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                    
+                case OmenKeyAction.ToggleMaxCooling:
+                    ToggleMaxCoolingRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                    
+                case OmenKeyAction.LaunchExternalApp:
+                    LaunchExternalApplication();
+                    break;
+                    
+                case OmenKeyAction.DoNothing:
+                    // Key is blocked but no action taken
+                    break;
+            }
+        }
+        
+        private void LaunchExternalApplication()
+        {
+            if (string.IsNullOrWhiteSpace(_externalAppPath))
+            {
+                _logging.Warn("OMEN key set to launch app but no path configured");
+                return;
+            }
+            
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _externalAppPath,
+                    UseShellExecute = true
+                });
+                _logging.Info($"Launched external app: {_externalAppPath}");
+            }
+            catch (Exception ex)
+            {
+                _logging.Error($"Failed to launch external app '{_externalAppPath}': {ex.Message}");
+            }
+        }
+        
+        private void LoadSettings()
+        {
+            if (_configService == null) return;
+            
+            try
+            {
+                _isEnabled = _configService.Config.OmenKeyEnabled;
+                _externalAppPath = _configService.Config.OmenKeyExternalApp ?? string.Empty;
+                
+                if (Enum.TryParse<OmenKeyAction>(_configService.Config.OmenKeyAction, out var action))
+                {
+                    _currentAction = action;
+                }
+                
+                _logging.Info($"OMEN key settings loaded: Enabled={_isEnabled}, Action={_currentAction}");
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to load OMEN key settings: {ex.Message}");
+            }
+        }
+        
+        private void SaveSettings()
+        {
+            if (_configService == null) return;
+            
+            try
+            {
+                _configService.Config.OmenKeyEnabled = _isEnabled;
+                _configService.Config.OmenKeyAction = _currentAction.ToString();
+                _configService.Config.OmenKeyExternalApp = _externalAppPath;
+                _configService.Save(_configService.Config);
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to save OMEN key settings: {ex.Message}");
+            }
         }
 
         private bool IsOmenKey(uint vkCode, uint scanCode)
@@ -257,5 +417,29 @@ namespace OmenCore.Services
                 _disposed = true;
             }
         }
+    }
+    
+    /// <summary>
+    /// Actions that can be bound to the OMEN key
+    /// </summary>
+    public enum OmenKeyAction
+    {
+        /// <summary>Show/hide OmenCore window</summary>
+        ToggleOmenCore,
+        
+        /// <summary>Cycle through performance modes</summary>
+        CyclePerformance,
+        
+        /// <summary>Cycle through fan presets</summary>
+        CycleFanMode,
+        
+        /// <summary>Toggle max cooling on/off</summary>
+        ToggleMaxCooling,
+        
+        /// <summary>Launch a user-specified external application</summary>
+        LaunchExternalApp,
+        
+        /// <summary>Suppress the key but do nothing</summary>
+        DoNothing
     }
 }

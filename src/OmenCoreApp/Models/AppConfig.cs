@@ -62,6 +62,19 @@ namespace OmenCore.Models
         /// Power automation settings for AC/Battery profile switching.
         /// </summary>
         public PowerAutomationSettings? PowerAutomation { get; set; }
+        
+        // OMEN Key Interception settings
+        /// <summary>Enable OMEN key interception to prevent OGH from launching</summary>
+        public bool OmenKeyEnabled { get; set; } = false;
+        
+        /// <summary>Whether to block the key (true) or let it pass through (false)</summary>
+        public bool OmenKeyIntercept { get; set; } = true;
+        
+        /// <summary>Action to perform when OMEN key is pressed</summary>
+        public string OmenKeyAction { get; set; } = "ToggleOmenCore";
+        
+        /// <summary>Path to external app when OmenKeyAction is LaunchExternalApp</summary>
+        public string? OmenKeyExternalApp { get; set; }
     }
     
     /// <summary>

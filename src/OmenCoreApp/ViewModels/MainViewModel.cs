@@ -45,6 +45,7 @@ namespace OmenCore.ViewModels
         private readonly NotificationService _notificationService;
         private readonly BiosUpdateService _biosUpdateService;
         private readonly PowerAutomationService _powerAutomationService;
+        private readonly OmenKeyService _omenKeyService;
         private HpWmiBios? _wmiBios;
         private OghServiceProxy? _oghProxy;
         private HotkeyOsdWindow? _hotkeyOsd;
@@ -144,6 +145,22 @@ namespace OmenCore.ViewModels
                     OnPropertyChanged(nameof(Settings));
                 }
                 return _settings;
+            }
+        }
+
+        private GeneralViewModel? _general;
+        public GeneralViewModel? General
+        {
+            get
+            {
+                if (_general == null)
+                {
+                    _general = new GeneralViewModel(_fanService, _performanceModeService, _configService, _logging);
+                    // Wire up the FanControlViewModel reference for preset sync
+                    _general.SetFanControlViewModel(FanControl);
+                    OnPropertyChanged(nameof(General));
+                }
+                return _general;
             }
         }
         
@@ -996,6 +1013,7 @@ namespace OmenCore.ViewModels
             _hotkeyService = new HotkeyService(_logging);
             _notificationService = new NotificationService(_logging);
             _powerAutomationService = new PowerAutomationService(_logging, _fanService, _performanceModeService, _configService, _gpuSwitchService);
+            _omenKeyService = new OmenKeyService(_logging, _configService);
             _autoUpdateService.DownloadProgressChanged += OnUpdateDownloadProgressChanged;
             _autoUpdateService.UpdateCheckCompleted += OnBackgroundUpdateCheckCompleted;
             
@@ -1008,6 +1026,12 @@ namespace OmenCore.ViewModels
             _hotkeyService.ToggleBoostModeRequested += OnHotkeyToggleBoostMode;
             _hotkeyService.ToggleQuietModeRequested += OnHotkeyToggleQuietMode;
             _hotkeyService.ToggleWindowRequested += OnHotkeyToggleWindow;
+            
+            // Wire up OMEN key events
+            _omenKeyService.ToggleOmenCoreRequested += OnOmenKeyToggleWindow;
+            _omenKeyService.CyclePerformanceRequested += OnHotkeyTogglePerformanceMode;
+            _omenKeyService.CycleFanModeRequested += OnHotkeyToggleFanMode;
+            _omenKeyService.ToggleMaxCoolingRequested += OnOmenKeyToggleMaxCooling;
 
             // Initialize sub-ViewModels that don't depend on async services
             // InitializeSubViewModels(); // Removed in favor of lazy loading
@@ -2132,6 +2156,68 @@ namespace OmenCore.ViewModels
                 _logging.Warn($"Failed to set performance mode from tray: {ex.Message}");
             }
         }
+        
+        /// <summary>
+        /// Apply a combined quick profile (Performance + Fan) from the system tray
+        /// </summary>
+        public void ApplyQuickProfileFromTray(string profile)
+        {
+            _logging.Info($"Quick profile change requested from tray: {profile}");
+            try
+            {
+                // Use GeneralViewModel if available for proper syncing
+                if (General != null)
+                {
+                    switch (profile.ToLower())
+                    {
+                        case "performance":
+                            General.ApplyPerformanceProfile();
+                            break;
+                        case "balanced":
+                            General.ApplyBalancedProfile();
+                            break;
+                        case "quiet":
+                            General.ApplyQuietProfile();
+                            break;
+                        default:
+                            _logging.Warn($"Unknown profile: {profile}");
+                            return;
+                    }
+                }
+                else
+                {
+                    // Fallback: apply both modes separately
+                    switch (profile.ToLower())
+                    {
+                        case "performance":
+                            _performanceModeService.SetPerformanceMode("Performance");
+                            _fanService.ApplyMaxCooling();
+                            CurrentPerformanceMode = "Performance";
+                            CurrentFanMode = "Max";
+                            break;
+                        case "balanced":
+                            _performanceModeService.SetPerformanceMode("Default");
+                            _fanService.ApplyAutoMode();
+                            CurrentPerformanceMode = "Balanced";
+                            CurrentFanMode = "Auto";
+                            break;
+                        case "quiet":
+                            _performanceModeService.SetPerformanceMode("Quiet");
+                            _fanService.ApplyQuietMode();
+                            CurrentPerformanceMode = "Quiet";
+                            CurrentFanMode = "Quiet";
+                            break;
+                    }
+                }
+                
+                ShowHotkeyOsd("Profile", profile, "Tray");
+                PushEvent($"🎮 Profile: {profile}");
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to apply quick profile from tray: {ex.Message}");
+            }
+        }
 
         #endregion
 
@@ -2267,6 +2353,40 @@ namespace OmenCore.ViewModels
                 }
             });
         }
+        
+        private void OnOmenKeyToggleWindow(object? sender, EventArgs e)
+        {
+            // Same as hotkey toggle but may include OSD feedback
+            OnHotkeyToggleWindow(sender, e);
+        }
+        
+        private void OnOmenKeyToggleMaxCooling(object? sender, EventArgs e)
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(async () =>
+            {
+                try
+                {
+                    // Toggle between Max and Auto
+                    var currentPreset = FanControl?.SelectedPreset;
+                    if (currentPreset?.Name == "Max")
+                    {
+                        _fanService.ApplyAutoMode();
+                        FanControl?.SelectPresetByNameNoApply("Auto");
+                        ShowHotkeyOsd("Fan Mode", "Auto (BIOS Control)", "OMEN Key");
+                    }
+                    else
+                    {
+                        _fanService.ApplyMaxCooling();
+                        FanControl?.SelectPresetByNameNoApply("Max");
+                        ShowHotkeyOsd("Fan Mode", "Maximum Cooling", "OMEN Key");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logging.Warn($"OMEN key max cooling toggle failed: {ex.Message}");
+                }
+            });
+        }
 
         /// <summary>
         /// Initialize hotkeys after window handle is available
@@ -2279,12 +2399,24 @@ namespace OmenCore.ViewModels
                 _hotkeyService.RegisterDefaultHotkeys();
                 _logging.Info("Global hotkeys registered");
                 PushEvent("⌨️ Global hotkeys enabled");
+                
+                // Start OMEN key interception if enabled
+                if (_config.OmenKeyEnabled)
+                {
+                    _omenKeyService.StartInterception();
+                    _logging.Info("OMEN key interception started");
+                }
             }
             catch (Exception ex)
             {
                 _logging.Warn($"Failed to register hotkeys: {ex.Message}");
             }
         }
+        
+        /// <summary>
+        /// Get the OMEN key service for settings UI
+        /// </summary>
+        public OmenKeyService OmenKey => _omenKeyService;
 
         /// <summary>
         /// Get the notification service for external use
@@ -2363,6 +2495,9 @@ namespace OmenCore.ViewModels
             // Dispose hotkey and notification services
             _hotkeyService?.Dispose();
             _notificationService?.Dispose();
+            
+            // Dispose OMEN key service
+            _omenKeyService?.Dispose();
             
             // Dispose power automation service
             _powerAutomationService?.Dispose();

@@ -133,5 +133,28 @@ namespace OmenCore.Services
                 return false;
             }
         }
+        
+        /// <summary>
+        /// Replace the current configuration with a new one
+        /// </summary>
+        public void Replace(AppConfig newConfig)
+        {
+            // Copy all properties from newConfig to Config
+            var json = JsonSerializer.Serialize(newConfig, _jsonOptions);
+            var replacement = JsonSerializer.Deserialize<AppConfig>(json, _jsonOptions);
+            if (replacement != null)
+            {
+                Config = replacement;
+            }
+        }
+        
+        /// <summary>
+        /// Reset configuration to defaults
+        /// </summary>
+        public void ResetToDefaults()
+        {
+            Config = DefaultConfiguration.Create();
+            ValidateAndRepair(Config);
+        }
     }
 }

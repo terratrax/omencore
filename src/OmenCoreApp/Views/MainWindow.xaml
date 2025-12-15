@@ -373,33 +373,14 @@
                     </StackPanel>
 
                     <TabControl Grid.Row="1" Margin="24,0,24,12" Style="{StaticResource ModernTabControl}" ItemContainerStyle="{StaticResource ModernTabItem}">
-                <TabItem Header="HP Omen">
-                    <ScrollViewer Style="{StaticResource SmoothScrollViewer}" utils:ScrollSpeedBehavior.ScrollSpeedMultiplier="1.2">
-                        <StackPanel Margin="20,20,20,40">
-                            <Border Style="{StaticResource SurfaceCard}" 
-                                    Padding="16,12"
-                                    Margin="0,0,0,20"
-                                    HorizontalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Source="pack://application:,,,/Assets/omen.png" Width="48" Height="48" Margin="0,0,16,0" VerticalAlignment="Center" />
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="HP OMEN Control" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
-                                        <TextBlock Text="Advanced Laptop Configuration" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" />
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                            
-                            <!-- Fan Control View -->
-                            <GroupBox Header="Fan &amp; Thermal Control" Style="{StaticResource ModernGroupBox}">
-                                <views:FanControlView DataContext="{Binding FanControl}" />
-                            </GroupBox>
-                            
-                            <!-- System Control View -->
-                            <GroupBox Header="System Control" Style="{StaticResource ModernGroupBox}">
-                                <views:SystemControlView DataContext="{Binding SystemControl}" />
-                            </GroupBox>
-                        </StackPanel>
-                    </ScrollViewer>
+                <!-- General Tab: Performance + Fan Profiles (Paired) -->
+                <TabItem Header="General">
+                    <views:GeneralView DataContext="{Binding General}" />
+                </TabItem>
+                
+                <!-- Advanced Tab: CPU Undervolt, GPU Settings, Custom Fan Curves -->
+                <TabItem Header="Advanced">
+                    <views:AdvancedView DataContext="{Binding}" />
                 </TabItem>
                 
                 <!-- Monitoring Tab with Dashboard View -->

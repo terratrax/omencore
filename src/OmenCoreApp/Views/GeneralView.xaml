@@ -1,0 +1,238 @@
+<UserControl x:Class="OmenCore.Views.GeneralView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:controls="clr-namespace:OmenCore.Controls"
+             xmlns:utils="clr-namespace:OmenCore.Utils"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000">
+    <ScrollViewer Style="{StaticResource SmoothScrollViewer}" 
+                  utils:ScrollSpeedBehavior.ScrollSpeedMultiplier="1.2">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <Border Style="{StaticResource SurfaceCard}" 
+                        Padding="16,12"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="pack://application:,,,/Assets/omen.png" Width="48" Height="48" Margin="0,0,16,0" VerticalAlignment="Center" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Performance &amp; Cooling" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="Select a profile to optimize performance and cooling together" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Current Status Display -->
+            <Border Grid.Row="1" 
+                    Background="{StaticResource SurfaceDarkBrush}"
+                    BorderBrush="{StaticResource AccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20,16"
+                    Margin="0,0,0,24"
+                    HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,30,0">
+                        <Path Data="{StaticResource IconPerformance}" Width="20" Height="20" Fill="{StaticResource AccentBrush}" Stretch="Uniform" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <StackPanel>
+                            <TextBlock Text="Performance Mode" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"/>
+                            <TextBlock Text="{Binding CurrentPerformanceMode, FallbackValue=Default}" 
+                                       FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Rectangle Width="1" Height="40" Fill="{StaticResource BorderBrush}"/>
+                    <StackPanel Orientation="Horizontal" Margin="30,0,0,0">
+                        <Path Data="{StaticResource IconFan}" Width="20" Height="20" Fill="{StaticResource AccentBlueBrush}" Stretch="Uniform" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <StackPanel>
+                            <TextBlock Text="Fan Mode" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"/>
+                            <TextBlock Text="{Binding CurrentFanMode, FallbackValue=Auto}" 
+                                       FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBlueBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Paired Profile Selection -->
+            <Border Grid.Row="2" Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="QUICK PROFILES" Style="{StaticResource Label}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Each profile pairs a performance mode with an optimal fan configuration" 
+                               Style="{StaticResource Caption}" FontSize="13" Margin="0,0,0,20"/>
+
+                    <!-- Profile Cards Grid -->
+                    <UniformGrid Rows="1" Columns="4" Margin="0,0,0,0">
+                        <!-- Performance Profile -->
+                        <Border Style="{StaticResource SurfaceCard}" 
+                                Margin="0,0,8,0" Padding="16"
+                                BorderBrush="{Binding SelectedProfileBorder_Performance}"
+                                BorderThickness="2"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="Profile_Performance_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🔥" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Performance" FontSize="14" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Max Power + Aggressive Cooling" FontSize="10" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="4" Padding="8,4" Margin="0,8,0,0"
+                                        Visibility="{Binding IsPerformanceSelected, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="ACTIVE" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Balanced Profile -->
+                        <Border Style="{StaticResource SurfaceCard}" 
+                                Margin="4,0,4,0" Padding="16"
+                                BorderBrush="{Binding SelectedProfileBorder_Balanced}"
+                                BorderThickness="2"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="Profile_Balanced_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="⚖️" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Balanced" FontSize="14" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Default Power + Auto Fans" FontSize="10" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="4" Padding="8,4" Margin="0,8,0,0"
+                                        Visibility="{Binding IsBalancedSelected, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="ACTIVE" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Quiet Profile -->
+                        <Border Style="{StaticResource SurfaceCard}" 
+                                Margin="4,0,4,0" Padding="16"
+                                BorderBrush="{Binding SelectedProfileBorder_Quiet}"
+                                BorderThickness="2"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="Profile_Quiet_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🔇" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Quiet" FontSize="14" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Power Saver + Silent Fans" FontSize="10" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="4" Padding="8,4" Margin="0,8,0,0"
+                                        Visibility="{Binding IsQuietSelected, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="ACTIVE" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Custom Profile -->
+                        <Border Style="{StaticResource SurfaceCard}" 
+                                Margin="8,0,0,0" Padding="16"
+                                BorderBrush="{Binding SelectedProfileBorder_Custom}"
+                                BorderThickness="2"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="Profile_Custom_Click">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="⚙️" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="Custom" FontSize="14" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Manual Control (Advanced Tab)" FontSize="10" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="4" Padding="8,4" Margin="0,8,0,0"
+                                        Visibility="{Binding IsCustomSelected, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="ACTIVE" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Live Status -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Temperatures -->
+                <Border Grid.Column="0" Style="{StaticResource SurfaceCard}" Padding="20" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="TEMPERATURES" Style="{StaticResource Label}" Margin="0,0,0,16"/>
+                        
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="CPU" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1" Value="{Binding CpuTemp}" Maximum="100" Height="8" Margin="16,0" 
+                                         Background="{StaticResource SurfaceMediumBrush}" Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding CpuTemp, StringFormat={}{0:F0}°C}" 
+                                       FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Width="55" TextAlignment="Right"/>
+                        </Grid>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="GPU" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1" Value="{Binding GpuTemp}" Maximum="100" Height="8" Margin="16,0" 
+                                         Background="{StaticResource SurfaceMediumBrush}" Foreground="{StaticResource AccentBlueBrush}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuTemp, StringFormat={}{0:F0}°C}" 
+                                       FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource AccentBlueBrush}" Width="55" TextAlignment="Right"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Fan Speeds -->
+                <Border Grid.Column="1" Style="{StaticResource SurfaceCard}" Padding="20" Margin="8,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="FAN SPEEDS" Style="{StaticResource Label}" Margin="0,0,0,16"/>
+                        
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="CPU Fan" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1" Value="{Binding CpuFanPercent}" Maximum="100" Height="8" Margin="16,0" 
+                                         Background="{StaticResource SurfaceMediumBrush}" Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding CpuFanRpm, StringFormat={}{0} RPM}" 
+                                       FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" Width="80" TextAlignment="Right"/>
+                        </Grid>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="GPU Fan" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1" Value="{Binding GpuFanPercent}" Maximum="100" Height="8" Margin="16,0" 
+                                         Background="{StaticResource SurfaceMediumBrush}" Foreground="{StaticResource AccentBlueBrush}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding GpuFanRpm, StringFormat={}{0} RPM}" 
+                                       FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" Width="80" TextAlignment="Right"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

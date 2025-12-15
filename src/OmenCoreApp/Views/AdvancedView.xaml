@@ -1,0 +1,324 @@
+<UserControl x:Class="OmenCore.Views.AdvancedView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:OmenCore.Controls"
+             xmlns:utils="clr-namespace:OmenCore.Utils"
+             xmlns:views="clr-namespace:OmenCore.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1000">
+    <ScrollViewer Style="{StaticResource SmoothScrollViewer}" 
+                  utils:ScrollSpeedBehavior.ScrollSpeedMultiplier="1.2"
+                  Padding="0,0,12,0">
+        <StackPanel Margin="20,20,20,40">
+            <!-- Header -->
+            <StackPanel Margin="0,0,0,24">
+                <TextBlock Text="Advanced Controls" Style="{StaticResource Heading1}"/>
+                <TextBlock Text="Fine-tune fan curves, CPU undervolting, GPU power, and other advanced settings" 
+                           Style="{StaticResource Caption}"/>
+            </StackPanel>
+
+            <!-- Fan Curve Editor Section -->
+            <GroupBox Header="Custom Fan Curve" Style="{StaticResource ModernGroupBox}" Margin="0,0,0,20">
+                <views:FanControlView DataContext="{Binding FanControl}" />
+            </GroupBox>
+
+            <!-- CPU Undervolting Section -->
+            <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="CPU Undervolting" FontSize="20" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    
+                    <Border Background="{StaticResource SurfaceDarkBrush}" 
+                            CornerRadius="8" Padding="12" Margin="0,0,0,16"
+                            BorderBrush="Orange" BorderThickness="2">
+                        <TextBlock FontSize="12" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap">
+                            <Run Text="⚠️ IMPORTANT SAFETY INFORMATION" FontWeight="Bold" Foreground="Orange" FontSize="13"/>
+                            <LineBreak/><LineBreak/>
+                            <Run Text="• Incorrect voltage offsets can cause system crashes, data loss, or instability" FontWeight="SemiBold"/>
+                            <LineBreak/>
+                            <Run Text="• Start with conservative values (-60mV) and test thoroughly"/>
+                            <LineBreak/>
+                            <Run Text="• After applying, run a stress test (Prime95, Cinebench) for 30+ minutes"/>
+                            <LineBreak/>
+                            <Run Text="• If system crashes or freezes, reduce offset by 10-20mV"/>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- Undervolt Status -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Status:" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Margin="0,0,12,0"/>
+                        
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding SystemControl.UndervoltStatusText}" 
+                                   FontSize="14" 
+                                   Foreground="{Binding SystemControl.UndervoltStatusColor}"/>
+                    </Grid>
+
+                    <!-- Core Offset -->
+                    <StackPanel Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Core Voltage Offset:" 
+                                       FontSize="14" 
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding SystemControl.RequestedCoreOffset, StringFormat={}{0} mV}" 
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                        </Grid>
+                        
+                        <Slider Minimum="-200" Maximum="0" 
+                                TickFrequency="5" 
+                                Value="{Binding SystemControl.RequestedCoreOffset, Mode=TwoWay}"
+                                IsSnapToTickEnabled="True"/>
+                        
+                        <TextBlock Text="Recommended: -80 mV to -120 mV" 
+                                   FontSize="11" 
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Cache Offset -->
+                    <StackPanel Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Cache Voltage Offset:" 
+                                       FontSize="14" 
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding SystemControl.RequestedCacheOffset, StringFormat={}{0} mV}" 
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                        </Grid>
+                        
+                        <Slider Minimum="-200" Maximum="0" 
+                                TickFrequency="5" 
+                                Value="{Binding SystemControl.RequestedCacheOffset, Mode=TwoWay}"
+                                IsSnapToTickEnabled="True"/>
+                    </StackPanel>
+
+                    <!-- Apply Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Apply Undervolt" 
+                                Style="{StaticResource ModernButton}"
+                                Command="{Binding SystemControl.ApplyUndervoltCommand}"
+                                Padding="16,8" Margin="0,0,8,0"/>
+                        
+                        <Button Content="Reset to Default" 
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding SystemControl.ResetUndervoltCommand}"
+                                Padding="16,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- GPU Power Boost Section -->
+            <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="GPU Power Boost (TGP/Dynamic Boost)" FontSize="20" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    
+                    <TextBlock Text="Control GPU Total Graphics Power (TGP) and Dynamic Boost (+15W PPAB). Higher settings enable more GPU wattage for better gaming performance." 
+                               FontSize="12" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,16" TextWrapping="Wrap"/>
+
+                    <!-- Current Status -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Status:" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Margin="0,0,12,0"/>
+                        
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding SystemControl.GpuPowerBoostStatus}" 
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}"/>
+                    </Grid>
+
+                    <!-- Power Level Selection -->
+                    <Grid Margin="0,0,0,16" 
+                          Visibility="{Binding SystemControl.GpuPowerBoostAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Power Level:" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        
+                        <ComboBox Grid.Column="1" 
+                                  Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding SystemControl.GpuPowerBoostLevels}"
+                                  SelectedItem="{Binding SystemControl.GpuPowerBoostLevel}"
+                                  Margin="0,0,12,0"/>
+                        
+                        <Button Grid.Column="2" 
+                                Content="Apply" 
+                                Style="{StaticResource ModernButton}"
+                                Command="{Binding SystemControl.ApplyGpuPowerBoostCommand}"
+                                Padding="16,8"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- GPU Switching Section -->
+            <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="GPU Switching (Advanced Optimus)" FontSize="20" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    
+                    <TextBlock Text="Switch between integrated and discrete GPU for optimal performance or battery life." 
+                               FontSize="12" 
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,12" TextWrapping="Wrap"/>
+                    
+                    <!-- Hardware Limitation Warning -->
+                    <Border Background="#2D2D1F"
+                            BorderBrush="#FF9800"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            Margin="0,0,0,16">
+                        <TextBlock FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap">
+                            <Run Text="⚠ Hardware Limitation: " FontWeight="SemiBold" Foreground="#FF9800"/>
+                            <Run Text="GPU mode switching requires a system reboot. Some OMEN models only support this via BIOS settings."/>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- Current GPU Mode -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Current Mode:" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Margin="0,0,12,0"/>
+                        
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding SystemControl.CurrentGpuMode}" 
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}"/>
+                    </Grid>
+
+                    <!-- GPU Mode Selection -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Switch To:" 
+                                   FontSize="14" 
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        
+                        <ComboBox Grid.Column="1" 
+                                  Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding SystemControl.GpuSwitchModes}"
+                                  SelectedItem="{Binding SystemControl.SelectedGpuMode}"
+                                  Margin="0,0,12,0"/>
+                        
+                        <Button Grid.Column="2" 
+                                Content="Apply (Requires Restart)" 
+                                Style="{StaticResource ModernButton}"
+                                Command="{Binding SystemControl.SwitchGpuModeCommand}"
+                                Padding="16,8"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- CPU Temperature Limit -->
+            <Border Style="{StaticResource SurfaceCard}" Padding="24"
+                    Visibility="{Binding SystemControl.TccStatus.IsSupported, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="CPU Temperature Limit (TCC Offset)" FontSize="20" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    
+                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,16" TextWrapping="Wrap">
+                        <Run Text="Set a maximum temperature for your CPU. The CPU will throttle when approaching this limit. Useful for reducing heat and fan noise."/>
+                    </TextBlock>
+                    
+                    <!-- Current Status -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="Current: " FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock Text="{Binding SystemControl.TccStatusText}" FontSize="14" Foreground="{StaticResource AccentBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Temperature Limit Slider -->
+                    <StackPanel Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Temperature Limit:" 
+                                       FontSize="14" 
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding SystemControl.RequestedTempLimit, StringFormat={}{0}°C}" 
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                        </Grid>
+                        
+                        <Slider Minimum="0" Maximum="{Binding SystemControl.TccSliderMaximum}" 
+                                TickFrequency="5" 
+                                Value="{Binding SystemControl.RequestedTccOffset, Mode=TwoWay}"
+                                IsSnapToTickEnabled="True"
+                                IsDirectionReversed="True"/>
+                    </StackPanel>
+
+                    <!-- Apply Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Apply Limit" 
+                                Style="{StaticResource ModernButton}"
+                                Command="{Binding SystemControl.ApplyTccOffsetCommand}"
+                                Padding="16,8" Margin="0,0,8,0"/>
+                        
+                        <Button Content="Remove Limit" 
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding SystemControl.ResetTccOffsetCommand}"
+                                Padding="16,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

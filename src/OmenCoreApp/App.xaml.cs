@@ -196,6 +196,11 @@ namespace OmenCore
                 {
                     mainViewModel.SetPerformanceModeFromTray(mode);
                 };
+                
+                _trayIconService.QuickProfileChangeRequested += profile =>
+                {
+                    mainViewModel.ApplyQuickProfileFromTray(profile);
+                };
 
                 // Subscribe to MainViewModel mode changes to update tray display
                 mainViewModel.PropertyChanged += (s, e) =>

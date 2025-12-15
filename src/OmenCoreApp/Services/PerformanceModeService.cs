@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OmenCore.Hardware;
 using OmenCore.Models;
 
@@ -11,6 +12,7 @@ namespace OmenCore.Services
         private readonly PowerPlanService _powerPlanService;
         private readonly PowerLimitController? _powerLimitController;
         private readonly LoggingService _logging;
+        private string _currentMode = "Default";
 
         public PerformanceModeService(
             IFanController fanController, 
@@ -78,8 +80,45 @@ namespace OmenCore.Services
                 _logging.Warn("⚠️ Fan control unavailable");
             }
             
+            _currentMode = mode.Name;
             _logging.Info($"✓ Performance mode '{mode.Name}' applied successfully");
         }
+
+        /// <summary>
+        /// Set performance mode by name (for GeneralView quick profiles).
+        /// </summary>
+        public void SetPerformanceMode(string modeName)
+        {
+            // Map common names to default modes
+            PerformanceMode? mode = modeName.ToLowerInvariant() switch
+            {
+                "performance" => new PerformanceMode 
+                { 
+                    Name = "Performance", 
+                    CpuPowerLimitWatts = 95, 
+                    GpuPowerLimitWatts = 140 
+                },
+                "quiet" or "silent" or "powersaver" => new PerformanceMode 
+                { 
+                    Name = "Quiet", 
+                    CpuPowerLimitWatts = 35, 
+                    GpuPowerLimitWatts = 60 
+                },
+                _ => new PerformanceMode 
+                { 
+                    Name = "Default", 
+                    CpuPowerLimitWatts = 65, 
+                    GpuPowerLimitWatts = 100 
+                }
+            };
+            
+            Apply(mode);
+        }
+
+        /// <summary>
+        /// Get the current performance mode name.
+        /// </summary>
+        public string? GetCurrentMode() => _currentMode;
 
         public IReadOnlyList<PerformanceMode> GetModes(AppConfig config) => config.PerformanceModes;
     }

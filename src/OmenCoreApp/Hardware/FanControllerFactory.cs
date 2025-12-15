@@ -22,6 +22,11 @@ namespace OmenCore.Hardware
         bool SetPerformanceMode(string modeName);
         bool RestoreAutoControl();
         IEnumerable<FanTelemetry> ReadFanSpeeds();
+        
+        // Quick profile methods
+        void ApplyMaxCooling();
+        void ApplyAutoMode();
+        void ApplyQuietMode();
     }
 
     /// <summary>
@@ -410,6 +415,10 @@ namespace OmenCore.Hardware
             return Math.Clamp((rpm - minRpm) * 100 / (maxRpm - minRpm), 0, 100);
         }
 
+        public void ApplyMaxCooling() => _proxy.SetMaxFan(true);
+        public void ApplyAutoMode() => _proxy.SetThermalPolicy(OghServiceProxy.ThermalPolicy.Default);
+        public void ApplyQuietMode() => _proxy.SetThermalPolicy(OghServiceProxy.ThermalPolicy.Cool);
+
         public void Dispose()
         {
             if (!_disposed)
@@ -445,6 +454,10 @@ namespace OmenCore.Hardware
         public bool SetPerformanceMode(string modeName) => _controller.SetPerformanceMode(modeName);
         public bool RestoreAutoControl() => _controller.RestoreAutoControl();
         public IEnumerable<FanTelemetry> ReadFanSpeeds() => _controller.ReadFanSpeeds();
+
+        public void ApplyMaxCooling() => _controller.SetMaxFanSpeed(true);
+        public void ApplyAutoMode() => _controller.RestoreAutoControl();
+        public void ApplyQuietMode() => _controller.SetPerformanceMode("Cool");
 
         public void Dispose() => _controller.Dispose();
     }
@@ -546,6 +559,10 @@ namespace OmenCore.Hardware
 
         public IEnumerable<FanTelemetry> ReadFanSpeeds() => _controller.ReadFanSpeeds();
 
+        public void ApplyMaxCooling() => SetFanSpeed(100);
+        public void ApplyAutoMode() => SetFanSpeed(50);
+        public void ApplyQuietMode() => SetFanSpeed(30);
+
         public void Dispose()
         {
             // FanController doesn't implement IDisposable, nothing to dispose
@@ -644,6 +661,10 @@ namespace OmenCore.Hardware
             const int maxRpm = 6000;
             return Math.Clamp((rpm - minRpm) * 100 / (maxRpm - minRpm), 0, 100);
         }
+
+        public void ApplyMaxCooling() => _logging?.Warn("Fan control not available: Cannot apply max cooling");
+        public void ApplyAutoMode() => _logging?.Warn("Fan control not available: Cannot apply auto mode");
+        public void ApplyQuietMode() => _logging?.Warn("Fan control not available: Cannot apply quiet mode");
 
         public void Dispose()
         {

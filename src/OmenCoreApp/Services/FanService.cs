@@ -411,6 +411,68 @@ namespace OmenCore.Services
             }
         }
 
+        #region Quick Profile Methods (for GeneralView)
+
+        /// <summary>
+        /// Apply max cooling mode (100% fans).
+        /// </summary>
+        public void ApplyMaxCooling()
+        {
+            if (!FanWritesAvailable)
+            {
+                _logging.Warn("Max cooling skipped; fan control unavailable");
+                return;
+            }
+            
+            DisableCurve();
+            _fanController.ApplyMaxCooling();
+            _currentFanMode = "Max";
+            _logging.Info("Max cooling mode applied");
+        }
+
+        /// <summary>
+        /// Apply auto fan mode (BIOS control).
+        /// </summary>
+        public void ApplyAutoMode()
+        {
+            if (!FanWritesAvailable)
+            {
+                _logging.Warn("Auto mode skipped; fan control unavailable");
+                return;
+            }
+            
+            DisableCurve();
+            _fanController.ApplyAutoMode();
+            _currentFanMode = "Auto";
+            _logging.Info("Auto fan mode applied (BIOS control)");
+        }
+
+        /// <summary>
+        /// Apply quiet fan mode (low speeds).
+        /// </summary>
+        public void ApplyQuietMode()
+        {
+            if (!FanWritesAvailable)
+            {
+                _logging.Warn("Quiet mode skipped; fan control unavailable");
+                return;
+            }
+            
+            DisableCurve();
+            _fanController.ApplyQuietMode();
+            _currentFanMode = "Quiet";
+            _logging.Info("Quiet fan mode applied");
+        }
+
+        private string _currentFanMode = "Auto";
+        
+        /// <summary>
+        /// Get the current fan mode name.
+        /// </summary>
+        public string? GetCurrentFanMode() => _currentFanMode;
+
+        #endregion
+
         public void Dispose()
         {
             DisableCurve();

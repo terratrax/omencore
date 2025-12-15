@@ -36,6 +36,7 @@ namespace OmenCore.Utils
 
         public event Action<string>? FanModeChangeRequested;
         public event Action<string>? PerformanceModeChangeRequested;
+        public event Action<string>? QuickProfileChangeRequested;
 
         public TrayIconService(TaskbarIcon trayIcon, Action showMainWindow, Action shutdownApp)
         {
@@ -149,6 +150,30 @@ namespace OmenCore.Utils
             contextMenu.Items.Add(CreateStyledSeparator(borderBrush));
 
             // ═══ CONTROL SECTION ═══
+            
+            // Quick Profiles - combined Performance + Fan modes
+            var quickProfileMenuItem = new MenuItem
+            {
+                Header = CreateControlItem("🎮", "Quick Profiles", "Balanced", accentPrimary),
+                Foreground = textPrimary,
+                Style = darkMenuItemStyle,
+                Padding = new Thickness(8, 6, 8, 6)
+            };
+            
+            var profilePerformance = CreateSubMenuItem("🚀", "Performance", "Max power + Max cooling", darkMenuItemStyle);
+            profilePerformance.Click += (s, e) => QuickProfileChangeRequested?.Invoke("Performance");
+            var profileBalanced = CreateSubMenuItem("⚖️", "Balanced", "Default power + Auto fans", darkMenuItemStyle);
+            profileBalanced.Click += (s, e) => QuickProfileChangeRequested?.Invoke("Balanced");
+            var profileQuiet = CreateSubMenuItem("🤫", "Quiet", "Power saver + Silent fans", darkMenuItemStyle);
+            profileQuiet.Click += (s, e) => QuickProfileChangeRequested?.Invoke("Quiet");
+            
+            quickProfileMenuItem.Items.Add(profilePerformance);
+            quickProfileMenuItem.Items.Add(profileBalanced);
+            quickProfileMenuItem.Items.Add(profileQuiet);
+            contextMenu.Items.Add(quickProfileMenuItem);
+            
+            contextMenu.Items.Add(CreateStyledSeparator(borderBrush));
+            
             _fanModeMenuItem = new MenuItem
             {
                 Header = CreateControlItem("🌀", "Fan Mode", "Auto", accentSecondary),
