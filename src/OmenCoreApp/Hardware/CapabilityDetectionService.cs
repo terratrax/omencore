@@ -91,6 +91,9 @@ namespace OmenCore.Hardware
                     _logging?.Info($"  Model: {Capabilities.ModelName}");
                 }
                 
+                // Detect model family based on name
+                DetectModelFamily();
+                
                 // Get chassis type (desktop vs laptop)
                 DetectChassisType();
                 
@@ -116,6 +119,78 @@ namespace OmenCore.Hardware
             {
                 _logging?.Warn($"Device identification error: {ex.Message}");
             }
+        }
+        
+        /// <summary>
+        /// Detect OMEN model family from model name.
+        /// Different families have different fan control support levels.
+        /// </summary>
+        private void DetectModelFamily()
+        {
+            var model = Capabilities.ModelName?.ToUpperInvariant() ?? "";
+            
+            // OMEN Transcend models (newer ultrabook-style, may need OGH)
+            if (model.Contains("TRANSCEND"))
+            {
+                Capabilities.ModelFamily = OmenModelFamily.Transcend;
+                _logging?.Info($"  Model Family: OMEN Transcend (may require OGH proxy for fan control)");
+                return;
+            }
+            
+            // Check for desktop models
+            if (model.Contains("25L") || model.Contains("30L") || model.Contains("40L") || model.Contains("45L"))
+            {
+                Capabilities.ModelFamily = OmenModelFamily.Desktop;
+                _logging?.Info($"  Model Family: OMEN Desktop");
+                return;
+            }
+            
+            // HP Victus models
+            if (model.Contains("VICTUS"))
+            {
+                Capabilities.ModelFamily = OmenModelFamily.Victus;
+                _logging?.Info($"  Model Family: HP Victus");
+                return;
+            }
+            
+            // Try to detect year from model for 2024+ detection
+            // Models like "OMEN by HP 16-wf1xxx" where 1xxx suggests 2024+
+            if (model.Contains("OMEN"))
+            {
+                // Look for OMEN 16/17 with year indicators
+                // wf0xxx = 2023, wf1xxx = 2024, etc.
+                if (model.Contains("-WF1") || model.Contains("-XF1") || 
+                    model.Contains(" 14-") || // OMEN 14 is newer line
+                    model.Contains("2024"))
+                {
+                    Capabilities.ModelFamily = OmenModelFamily.OMEN2024Plus;
+                    _logging?.Info($"  Model Family: OMEN 2024+ (may require OGH proxy for fan control)");
+                    return;
+                }
+                
+                // Classic OMEN 16/17
+                if (model.Contains(" 16") || model.Contains("16-"))
+                {
+                    Capabilities.ModelFamily = OmenModelFamily.OMEN16;
+                    _logging?.Info($"  Model Family: OMEN 16");
+                    return;
+                }
+                
+                if (model.Contains(" 17") || model.Contains("17-"))
+                {
+                    Capabilities.ModelFamily = OmenModelFamily.OMEN17;
+                    _logging?.Info($"  Model Family: OMEN 17");
+                    return;
+                }
+                
+                // Generic OMEN without specific model number might be legacy
+                Capabilities.ModelFamily = OmenModelFamily.Legacy;
+                _logging?.Info($"  Model Family: OMEN (legacy/unknown generation)");
+                return;
+            }
+            
+            Capabilities.ModelFamily = OmenModelFamily.Unknown;
+            _logging?.Info($"  Model Family: Unknown (non-OMEN device?)");
         }
         
         private void DetectChassisType()
@@ -328,19 +403,51 @@ namespace OmenCore.Hardware
         {
             _logging?.Info("Phase 6: Determining fan control method...");
             
-            // Priority order:
-            // 1. WMI BIOS (no driver needed, works everywhere)
-            // 2. OGH Proxy (if WMI fails but OGH is running)
+            // Priority order depends on model family:
+            // For newer models (Transcend, 2024+): OGH Proxy preferred over WMI BIOS
+            // For classic models: WMI BIOS preferred
+            //
+            // 1. OGH Proxy (for newer models or if WMI fails)
+            // 2. WMI BIOS (for classic models, no driver needed)
             // 3. Direct EC via PawnIO (Secure Boot compatible)
             // 4. Direct EC via WinRing0 (requires Secure Boot disabled)
             // 5. Monitoring only
             
+            // Check if this is a newer model that typically needs OGH proxy
+            if (Capabilities.IsNewerModelRequiringOgh)
+            {
+                _logging?.Info("  Newer OMEN model detected (Transcend/2024+) - preferring OGH proxy");
+                
+                if (Capabilities.OghRunning && _oghProxy?.IsAvailable == true)
+                {
+                    Capabilities.FanControl = FanControlMethod.OghProxy;
+                    Capabilities.CanSetFanSpeed = true;
+                    Capabilities.CanReadRpm = true;
+                    Capabilities.RequiresOghService = true;
+                    _logging?.Info("  → Using OGH proxy for fan control (recommended for this model)");
+                    return;
+                }
+                else
+                {
+                    _logging?.Warn("  ⚠️ OGH proxy not available - fan control may not work correctly");
+                    _logging?.Info("  💡 Install OMEN Gaming Hub for reliable fan control on this model");
+                }
+            }
+            
+            // Standard priority for classic models
             if (_wmiBios?.IsAvailable == true)
             {
                 Capabilities.FanControl = FanControlMethod.WmiBios;
                 Capabilities.CanSetFanSpeed = true;
                 Capabilities.CanReadRpm = true;
                 _logging?.Info("  → Using WMI BIOS for fan control");
+                
+                // Add note for newer models that might need OGH
+                if (Capabilities.IsNewerModelRequiringOgh)
+                {
+                    _logging?.Warn("  ⚠️ Note: If fan control doesn't change actual fan speeds,");
+                    _logging?.Warn("     install OMEN Gaming Hub for OGH proxy support");
+                }
             }
             else if (Capabilities.OghRunning && _oghProxy?.IsAvailable == true)
             {

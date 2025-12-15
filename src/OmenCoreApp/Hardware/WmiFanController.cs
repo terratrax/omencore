@@ -14,6 +14,10 @@ namespace OmenCore.Hardware
     /// 
     /// Features automatic countdown extension to prevent BIOS from reverting
     /// fan settings after 120 seconds (HP BIOS limitation).
+    /// 
+    /// Note: Some newer models (OMEN Transcend, 2024+ models) may return success
+    /// from WMI commands but not actually change fan behavior. The verification
+    /// system can detect this and report if a different backend should be used.
     /// </summary>
     public class WmiFanController : IDisposable
     {
@@ -29,6 +33,13 @@ namespace OmenCore.Hardware
         private Timer? _countdownExtensionTimer;
         private const int CountdownExtensionIntervalMs = 90000; // 90 seconds (timer is 120s)
         private bool _countdownExtensionEnabled = false;
+        
+        // Command verification tracking
+        private int _commandSuccessCount = 0;
+        private int _commandVerifyFailCount = 0;
+        private int? _lastCommandRpmBefore = null;
+        private const int VerifyDelayMs = 3000; // Wait 3 seconds for fans to respond
+        private const int VerifyThreshold = 3; // After 3 verified failures, mark as ineffective
 
         public bool IsAvailable => _wmiBios.IsAvailable;
         public string Status => _wmiBios.Status;
@@ -43,6 +54,18 @@ namespace OmenCore.Hardware
         /// Indicates if countdown extension is enabled to prevent fan mode reverting.
         /// </summary>
         public bool CountdownExtensionEnabled => _countdownExtensionEnabled;
+        
+        /// <summary>
+        /// Indicates if WMI commands appear to be ineffective (return success but no change).
+        /// On some newer OMEN models (Transcend, 2024+), WMI may report success but
+        /// not actually change fan speed. In this case, OGH proxy should be used.
+        /// </summary>
+        public bool CommandsIneffective => _commandVerifyFailCount >= VerifyThreshold;
+        
+        /// <summary>
+        /// Number of times commands returned success but verification showed no change.
+        /// </summary>
+        public int VerifyFailCount => _commandVerifyFailCount;
 
         public WmiFanController(LibreHardwareMonitorImpl hwMonitor, LoggingService? logging = null)
         {
@@ -624,6 +647,152 @@ namespace OmenCore.Hardware
             catch (Exception ex)
             {
                 _logging?.Warn($"Failed to extend fan countdown: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Test if WMI commands actually affect fan speed.
+        /// Some newer OMEN models (Transcend, 2024+) return success but don't change speed.
+        /// This helps detect if OGH proxy should be used instead.
+        /// </summary>
+        /// <returns>True if commands appear effective, false if they seem to have no effect</returns>
+        public bool TestCommandEffectiveness()
+        {
+            if (!IsAvailable)
+                return false;
+                
+            _logging?.Info("Testing WMI command effectiveness...");
+            
+            try
+            {
+                // Get baseline RPM
+                var initialSpeeds = ReadFanSpeeds().ToList();
+                var initialRpm = initialSpeeds.FirstOrDefault()?.SpeedRpm ?? 0;
+                _logging?.Info($"  Initial fan RPM: {initialRpm}");
+                
+                // Try setting max fan mode
+                bool setResult = _wmiBios.SetFanMax(true);
+                _logging?.Info($"  SetFanMax(true) returned: {setResult}");
+                
+                if (!setResult)
+                {
+                    _logging?.Warn("  WMI command returned failure - commands may not work on this model");
+                    return false;
+                }
+                
+                // Wait for fans to respond (they have inertia)
+                System.Threading.Thread.Sleep(VerifyDelayMs);
+                
+                // Check if RPM increased
+                var newSpeeds = ReadFanSpeeds().ToList();
+                var newRpm = newSpeeds.FirstOrDefault()?.SpeedRpm ?? 0;
+                _logging?.Info($"  New fan RPM after max command: {newRpm}");
+                
+                // Restore default mode
+                _wmiBios.SetFanMax(false);
+                _wmiBios.SetFanMode(HpWmiBios.FanMode.Default);
+                
+                // If initial RPM was already high (> 4000), command might not show increase
+                // In that case, we consider it likely working
+                if (initialRpm >= 4000)
+                {
+                    _logging?.Info("  Initial RPM already high - assuming commands work");
+                    _commandSuccessCount++;
+                    return true;
+                }
+                
+                // If RPM increased by at least 500, commands are working
+                int rpmIncrease = newRpm - initialRpm;
+                if (rpmIncrease >= 500)
+                {
+                    _logging?.Info($"  ✓ Fan RPM increased by {rpmIncrease} - commands are effective");
+                    _commandSuccessCount++;
+                    return true;
+                }
+                
+                // Commands returned success but no RPM change
+                _commandVerifyFailCount++;
+                _logging?.Warn($"  ⚠️ WMI returned success but fan RPM didn't change significantly (+{rpmIncrease})");
+                _logging?.Warn($"  This model may require OGH proxy for fan control (fail count: {_commandVerifyFailCount})");
+                
+                if (CommandsIneffective)
+                {
+                    _logging?.Error("  ❌ WMI commands confirmed ineffective on this model");
+                    _logging?.Info("  → Consider using OGH proxy or reinstalling OMEN Gaming Hub");
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logging?.Warn($"Command effectiveness test failed: {ex.Message}");
+                return true; // Assume working on exception to avoid false negatives
+            }
+        }
+        
+        /// <summary>
+        /// Record the current fan RPM before sending a command.
+        /// Call VerifyCommandEffect() after the command to check if it worked.
+        /// </summary>
+        public void RecordPreCommandRpm()
+        {
+            try
+            {
+                var speeds = ReadFanSpeeds().ToList();
+                _lastCommandRpmBefore = speeds.FirstOrDefault()?.SpeedRpm ?? 0;
+            }
+            catch
+            {
+                _lastCommandRpmBefore = null;
+            }
+        }
+        
+        /// <summary>
+        /// Verify if the last command had an effect on fan speed.
+        /// Should be called ~3 seconds after a fan command.
+        /// </summary>
+        /// <param name="wasIncreaseExpected">True if we expected fans to speed up, false if slow down</param>
+        /// <returns>True if command appeared effective</returns>
+        public bool VerifyCommandEffect(bool wasIncreaseExpected)
+        {
+            if (!_lastCommandRpmBefore.HasValue)
+                return true; // No baseline, assume success
+                
+            try
+            {
+                var speeds = ReadFanSpeeds().ToList();
+                var currentRpm = speeds.FirstOrDefault()?.SpeedRpm ?? 0;
+                var rpmChange = currentRpm - _lastCommandRpmBefore.Value;
+                
+                bool effectDetected;
+                if (wasIncreaseExpected)
+                {
+                    // For increase commands, we expect at least 300 RPM increase
+                    effectDetected = rpmChange >= 300 || currentRpm >= 4000;
+                }
+                else
+                {
+                    // For decrease commands, we expect at least 300 RPM decrease
+                    effectDetected = rpmChange <= -300 || currentRpm <= 2500;
+                }
+                
+                if (!effectDetected)
+                {
+                    _commandVerifyFailCount++;
+                    _logging?.Warn($"Command verification failed: RPM change was {rpmChange} (expected {(wasIncreaseExpected ? "increase" : "decrease")})");
+                }
+                else
+                {
+                    _commandSuccessCount++;
+                }
+                
+                _lastCommandRpmBefore = null;
+                return effectDetected;
+            }
+            catch
+            {
+                _lastCommandRpmBefore = null;
+                return true; // Assume success on error
             }
         }
 

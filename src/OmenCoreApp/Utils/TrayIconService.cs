@@ -616,7 +616,13 @@ namespace OmenCore.Utils
 
         /// <summary>
         /// Creates a dynamic tray icon showing temperature with color-coded background.
-        /// Colors: Blue (<60°C), Green (60-70°C), Orange (70-80°C), Red (>80°C)
+        /// Colors optimized for gaming laptops where higher temps are normal:
+        /// - Blue: < 50°C (idle/cool)
+        /// - Green: 50-65°C (light load)
+        /// - Yellow: 65-75°C (moderate load) 
+        /// - Orange: 75-85°C (gaming/heavy load - normal for laptops)
+        /// - Red: 85-95°C (very hot but within spec for gaming laptops)
+        /// - Magenta: > 95°C (critical - approaching thermal throttle)
         /// </summary>
         private ImageSource? CreateTempIcon(double temp)
         {
@@ -625,16 +631,18 @@ namespace OmenCore.Utils
 
             using (var dc = visual.RenderOpen())
             {
-                // Temperature-based background color
+                // Temperature-based background color (adjusted for gaming laptops)
                 Color bgColor;
-                if (temp < 60)
-                    bgColor = Color.FromRgb(0, 100, 200);      // Blue - Cool
-                else if (temp < 70)
-                    bgColor = Color.FromRgb(0, 180, 80);       // Green - Normal
-                else if (temp < 80)
-                    bgColor = Color.FromRgb(255, 140, 0);      // Orange - Warm
-                else if (temp < 90)
-                    bgColor = Color.FromRgb(255, 60, 60);      // Red - Hot
+                if (temp < 50)
+                    bgColor = Color.FromRgb(0, 120, 220);      // Blue - Cool/Idle
+                else if (temp < 65)
+                    bgColor = Color.FromRgb(0, 180, 80);       // Green - Light load
+                else if (temp < 75)
+                    bgColor = Color.FromRgb(220, 200, 0);      // Yellow - Moderate load
+                else if (temp < 85)
+                    bgColor = Color.FromRgb(255, 140, 0);      // Orange - Gaming/Heavy (normal for laptops)
+                else if (temp < 95)
+                    bgColor = Color.FromRgb(255, 60, 60);      // Red - Very hot
                 else
                     bgColor = Color.FromRgb(200, 0, 100);      // Magenta - Critical
 

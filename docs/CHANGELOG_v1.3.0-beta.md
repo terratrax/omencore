@@ -298,6 +298,61 @@ Based on community feedback, the following UI improvements were made:
 
 ## ⚠️ Known Issues
 
+---
+
+## 🔧 Model Compatibility Improvements (December 15, 2025)
+
+### OMEN Transcend 14 / 2024+ Model Support
+
+**Problem Reported:** Users with OMEN Transcend 14 (Ultra 7 + RTX 4060) reported that fan modes would switch in the app but actual fan speeds never changed. CPU temperatures reaching 100°C due to fans not ramping up.
+
+**Root Cause:** Newer OMEN models (Transcend, 2024+ models) have WMI BIOS interfaces that **return success** for fan commands but don't actually change fan behavior. These models require the **OGH Proxy** backend instead.
+
+**Solution Implemented:**
+
+1. **Model Family Detection** - New `OmenModelFamily` enum identifies:
+   - `OMEN16` / `OMEN17` - Classic models with full WMI support
+   - `Victus` - HP Victus line
+   - `Transcend` - Newer ultrabook-style OMEN Transcend 14/16
+   - `OMEN2024Plus` - 2024 and newer models
+   - `Desktop` - OMEN desktop towers
+
+2. **Smart Backend Selection** - For Transcend and 2024+ models:
+   - OGH Proxy is now **preferred over WMI BIOS**
+   - If OGH is running, OmenCore automatically uses it
+   - Warning shown if OGH not available on these models
+
+3. **Command Verification System** - New `TestCommandEffectiveness()` method:
+   - Measures fan RPM before and after sending commands
+   - If RPM doesn't change despite "success" return, flags backend as ineffective
+   - Recommends OGH proxy or OMEN Gaming Hub installation
+
+**Recommendation for Transcend 14 / 2024+ Users:**
+- **Keep OMEN Gaming Hub installed** - OmenCore will use its WMI interface (OGH Proxy) for reliable fan control
+- You can still use OmenCore as your main interface while OGH runs in background
+- Alternatively, use the **OGH Cleanup** option but understand fan control may be limited
+
+### Other Fixes (December 15, 2025)
+
+- **System Restore Error Handling** - Fixed "Not found" error when creating restore points
+  - Added registry check for System Restore enabled/disabled state
+  - Better error messages for common failure codes
+  
+- **Tray Icon Temperature Colors** - Adjusted thresholds for gaming laptops:
+  - Blue: < 50°C (was < 60°C)
+  - Green: 50-65°C (was 60-70°C)
+  - Yellow: 65-75°C (NEW band)
+  - Orange: 75-85°C
+  - Red: 85-95°C
+  - Magenta: > 95°C (critical)
+
+- **OGH Cleanup Section** - Restored to Settings tab (was accidentally removed during UI reorganization)
+  - Now only visible when OGH is installed
+
+---
+
+## ⚠️ Known Limitations
+
 1. **Some HP Models Still Limited:** Custom fan curves may still not work on models where WMI `SetFanLevel` command returns success but has no effect. These models may need EC direct access via PawnIO.
 
 2. **DPC Latency Still Higher Than OGH:** While significantly reduced, DPC latency may still be higher than native OMEN Gaming Hub on some systems due to WMI overhead.

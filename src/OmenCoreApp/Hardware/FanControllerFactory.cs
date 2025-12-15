@@ -132,10 +132,13 @@ namespace OmenCore.Hardware
         
         /// <summary>
         /// Create fan controller by trying all backends in order.
+        /// For newer models (OMEN Transcend, 2024+), WMI may report available but not actually work.
+        /// This method prioritizes OGH proxy for reliability on such models.
         /// </summary>
         private IFanController CreateWithAutoDetection()
         {
             // Try OGH proxy first (for 2023+ models with OGH running)
+            // OGH proxy is more reliable on newer OMEN models
             var oghController = TryCreateOghController();
             if (oghController != null)
             {
@@ -148,8 +151,12 @@ namespace OmenCore.Hardware
             var wmiController = TryCreateWmiController();
             if (wmiController != null)
             {
+                // On newer OMEN models, WMI may report success but not change fans
+                // We could optionally test effectiveness here but it adds delay
+                // Instead, log a note about potential issues
                 ActiveBackend = "WMI BIOS";
                 _logging?.Info("✓ Using WMI-based fan controller (no driver required)");
+                _logging?.Info("  Note: If fan control doesn't work, try installing OMEN Gaming Hub for OGH proxy support");
                 return wmiController;
             }
 
@@ -446,6 +453,18 @@ namespace OmenCore.Hardware
         public bool IsAvailable => _controller.IsAvailable;
         public string Status => _controller.Status;
         public string Backend => "WMI BIOS";
+        
+        /// <summary>
+        /// Check if WMI commands are ineffective on this model.
+        /// Some newer OMEN models (Transcend, 2024+) return success but don't change fan speed.
+        /// </summary>
+        public bool CommandsIneffective => _controller.CommandsIneffective;
+        
+        /// <summary>
+        /// Test if WMI commands actually affect fan behavior.
+        /// Returns true if commands appear to work, false if they seem ineffective.
+        /// </summary>
+        public bool TestCommandEffectiveness() => _controller.TestCommandEffectiveness();
 
         public bool ApplyPreset(FanPreset preset) => _controller.ApplyPreset(preset);
         public bool ApplyCustomCurve(IEnumerable<FanCurvePoint> curve) => _controller.ApplyCustomCurve(curve);

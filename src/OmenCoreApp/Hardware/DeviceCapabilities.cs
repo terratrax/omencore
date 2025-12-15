@@ -68,6 +68,26 @@ namespace OmenCore.Hardware
         public bool PawnIOAvailable { get; set; }
         public string DriverStatus { get; set; } = "";
         
+        // Model family detection (helps determine fan control method)
+        public OmenModelFamily ModelFamily { get; set; } = OmenModelFamily.Unknown;
+        
+        /// <summary>
+        /// Returns true if this is a newer model that typically requires OGH proxy for fan control.
+        /// OMEN Transcend and 2024+ models often have WMI that reports success but doesn't work.
+        /// </summary>
+        public bool IsNewerModelRequiringOgh => 
+            ModelFamily == OmenModelFamily.Transcend || 
+            ModelFamily == OmenModelFamily.OMEN2024Plus ||
+            (ModelName?.Contains("Transcend", StringComparison.OrdinalIgnoreCase) ?? false);
+        
+        /// <summary>
+        /// Returns true if this is a classic OMEN model with full WMI BIOS support.
+        /// </summary>
+        public bool IsClassicOmen =>
+            ModelFamily == OmenModelFamily.OMEN16 ||
+            ModelFamily == OmenModelFamily.OMEN17 ||
+            ModelFamily == OmenModelFamily.Victus;
+        
         /// <summary>
         /// Generates a summary of capabilities for logging/display.
         /// </summary>
@@ -193,6 +213,29 @@ namespace OmenCore.Hardware
         AmdCurveOptimizer,
         /// <summary>Intel XTU compatibility layer</summary>
         IntelXtu
+    }
+    
+    /// <summary>
+    /// OMEN laptop model family.
+    /// Different families have different WMI/EC support levels.
+    /// </summary>
+    public enum OmenModelFamily
+    {
+        Unknown = 0,
+        /// <summary>Classic OMEN 16 (2021-2023)</summary>
+        OMEN16,
+        /// <summary>Classic OMEN 17 (2021-2023)</summary>
+        OMEN17,
+        /// <summary>HP Victus line</summary>
+        Victus,
+        /// <summary>OMEN Transcend 14/16 - newer ultrabook style, may need OGH proxy</summary>
+        Transcend,
+        /// <summary>2024+ OMEN models - may have different WMI interface</summary>
+        OMEN2024Plus,
+        /// <summary>OMEN Desktop (25L/30L/40L/45L)</summary>
+        Desktop,
+        /// <summary>Older OMEN models (pre-2021)</summary>
+        Legacy
     }
     
     /// <summary>
