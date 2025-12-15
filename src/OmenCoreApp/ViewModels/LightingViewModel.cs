@@ -30,6 +30,18 @@ namespace OmenCore.ViewModels
         public ReadOnlyObservableCollection<CorsairDevice> CorsairDevices => _corsairService.Devices;
         public ReadOnlyObservableCollection<LogitechDevice> LogitechDevices => _logitechService.Devices;
         public ObservableCollection<CorsairLightingPreset> CorsairLightingPresets { get; } = new();
+        
+        /// <summary>
+        /// True if any Corsair devices have been discovered.
+        /// Used to hide the Corsair section when no devices are connected.
+        /// </summary>
+        public bool HasCorsairDevices => CorsairDevices.Count > 0;
+        
+        /// <summary>
+        /// True if any Logitech devices have been discovered.
+        /// Used to hide the Logitech section when no devices are connected.
+        /// </summary>
+        public bool HasLogitechDevices => LogitechDevices.Count > 0;
 
         public CorsairDevice? SelectedCorsairDevice
         {

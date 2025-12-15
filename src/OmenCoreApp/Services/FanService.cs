@@ -48,9 +48,10 @@ namespace OmenCore.Services
         private const int StableThreshold = 3; // Number of stable readings before slowing down
         private const double TempChangeThreshold = 3.0; // °C change to trigger faster polling
         
-        // Thermal protection - override Auto mode when temps critical
-        private const double ThermalProtectionThreshold = 90.0; // °C - start ramping fans
-        private const double ThermalEmergencyThreshold = 95.0;  // °C - max fans immediately
+        // Thermal protection - override Auto mode when temps get too high
+        // Lowered thresholds based on user feedback - fans were spinning up too late
+        private const double ThermalProtectionThreshold = 80.0; // °C - start ramping fans (was 90)
+        private const double ThermalEmergencyThreshold = 88.0;  // °C - max fans immediately (was 95)
         private bool _thermalProtectionActive = false;
         private bool _thermalProtectionEnabled = true; // Can be disabled in settings
         
@@ -348,6 +349,9 @@ namespace OmenCore.Services
         /// <summary>
         /// Thermal protection override - kicks fans to max when temps hit critical levels.
         /// This works even in Auto mode to prevent thermal throttling/damage.
+        /// Thresholds lowered based on user feedback:
+        /// - 80°C: Start ramping fans aggressively
+        /// - 88°C: Emergency max fans
         /// </summary>
         private void CheckThermalProtection(double cpuTemp, double gpuTemp)
         {
@@ -356,7 +360,7 @@ namespace OmenCore.Services
                 
             var maxTemp = Math.Max(cpuTemp, gpuTemp);
             
-            // Emergency: temps >= 95°C - immediate max fans
+            // Emergency: temps >= 88°C - immediate max fans
             if (maxTemp >= ThermalEmergencyThreshold)
             {
                 if (!_thermalProtectionActive)
@@ -370,7 +374,7 @@ namespace OmenCore.Services
                 return;
             }
             
-            // Warning: temps >= 90°C - ramp up fans aggressively
+            // Warning: temps >= 80°C - ramp up fans aggressively
             if (maxTemp >= ThermalProtectionThreshold)
             {
                 if (!_thermalProtectionActive)
@@ -379,8 +383,9 @@ namespace OmenCore.Services
                     _logging.Warn($"⚠️ THERMAL WARNING: {maxTemp:F0}°C - boosting fan speed");
                 }
                 
-                // Calculate aggressive fan speed: 90°C = 80%, scaling to 100% at 95°C
-                var fanPercent = (int)(80 + (maxTemp - ThermalProtectionThreshold) * 4); // 80% + 4% per °C
+                // Calculate aggressive fan speed: 80°C = 70%, scaling to 100% at 88°C
+                // More aggressive than before: 70% + ~3.75% per °C above 80
+                var fanPercent = (int)(70 + (maxTemp - ThermalProtectionThreshold) * 3.75);
                 fanPercent = Math.Min(100, fanPercent);
                 
                 _fanController.SetFanSpeed(fanPercent);
@@ -388,7 +393,8 @@ namespace OmenCore.Services
             }
             
             // Temps back to safe range - release thermal protection
-            if (_thermalProtectionActive && maxTemp < ThermalProtectionThreshold - 5) // 5°C hysteresis
+            // Use 5°C hysteresis (release at 75°C instead of 80°C)
+            if (_thermalProtectionActive && maxTemp < ThermalProtectionThreshold - 5)
             {
                 _thermalProtectionActive = false;
                 _logging.Info($"✓ Temps normalized ({maxTemp:F0}°C) - thermal protection released");

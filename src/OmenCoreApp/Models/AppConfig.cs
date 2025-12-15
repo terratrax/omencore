@@ -54,6 +54,13 @@ namespace OmenCore.Models
         public string? LastGpuPowerBoostLevel { get; set; }
         
         /// <summary>
+        /// Last applied TCC (Thermal Control Circuit) offset in degrees C.
+        /// Re-applied on startup to maintain CPU temperature limits.
+        /// 0 = no limit (full TjMax), higher values = lower temp limit.
+        /// </summary>
+        public int? LastTccOffset { get; set; }
+        
+        /// <summary>
         /// Last applied fan preset name for restoration on startup.
         /// </summary>
         public string? LastFanPresetName { get; set; }
@@ -127,7 +134,7 @@ namespace OmenCore.Models
         /// <summary>Toggle hotkey (e.g., F12)</summary>
         public string ToggleHotkey { get; set; } = "F12";
         
-        /// <summary>Position: TopLeft, TopRight, BottomLeft, BottomRight</summary>
+        /// <summary>Position: TopLeft, TopCenter, TopRight, BottomLeft, BottomCenter, BottomRight</summary>
         public string Position { get; set; } = "TopLeft";
         
         /// <summary>Opacity 0.0-1.0</summary>

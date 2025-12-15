@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -616,7 +617,7 @@ namespace OmenCore.ViewModels
             }
         }
 
-        public string[] OsdPositionOptions => new[] { "TopLeft", "TopRight", "BottomLeft", "BottomRight" };
+        public string[] OsdPositionOptions => new[] { "TopLeft", "TopCenter", "TopRight", "BottomLeft", "BottomCenter", "BottomRight" };
 
         public string OsdHotkey
         {
@@ -1036,13 +1037,8 @@ namespace OmenCore.ViewModels
             _batteryFanPreset = _config.PowerAutomation?.BatteryFanPreset ?? "Quiet";
             _batteryPerformanceMode = _config.PowerAutomation?.BatteryPerformanceMode ?? "Silent";
 
-            // Check startup registry
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", false);
-                _startWithWindows = key?.GetValue("OmenCore") != null;
-            }
-            catch { }
+            // Check startup status - first check Task Scheduler, then fall back to registry
+            _startWithWindows = CheckStartupTaskExists() || CheckStartupRegistryExists();
             
             _logging.Info($"Settings loaded: Hotkeys={_hotkeysEnabled}, Notifications={_notificationsEnabled}, PowerAutomation={_powerAutomationEnabled}");
         }
@@ -1078,6 +1074,66 @@ namespace OmenCore.ViewModels
             // Note: IncludePreReleases not yet in UpdatePreferences
 
             _configService.Save(_config);
+        }
+        
+        /// <summary>
+        /// Check if OmenCore scheduled task exists for startup.
+        /// </summary>
+        private bool CheckStartupTaskExists()
+        {
+            try
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "schtasks",
+                        Arguments = "/query /tn \"OmenCore\" /fo list",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
+                };
+                process.Start();
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(3000);
+                
+                // If exit code is 0 and output contains task name, task exists
+                var taskExists = process.ExitCode == 0 && output.Contains("OmenCore");
+                if (taskExists)
+                {
+                    _logging.Info("Startup task 'OmenCore' found in Task Scheduler");
+                }
+                return taskExists;
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Could not check Task Scheduler for startup task: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Check if OmenCore registry entry exists for startup (fallback method).
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        private bool CheckStartupRegistryExists()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", false);
+                var exists = key?.GetValue("OmenCore") != null;
+                if (exists)
+                {
+                    _logging.Info("Startup registry entry 'OmenCore' found");
+                }
+                return exists;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void SetStartWithWindows(bool enable)

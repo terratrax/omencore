@@ -101,6 +101,12 @@ namespace OmenCore.ViewModels
 
         public string UndervoltStatusSummary => UndervoltStatus == null ? "n/a" : $"Core {UndervoltStatus.CurrentCoreOffsetMv:+0;-0;0} mV | Cache {UndervoltStatus.CurrentCacheOffsetMv:+0;-0;0} mV";
         
+        /// <summary>
+        /// Whether undervolting is supported on this system.
+        /// False for AMD Ryzen CPUs that don't support Curve Optimizer, or when no MSR driver available.
+        /// </summary>
+        public bool IsUndervoltSupported => _undervoltService != null && !string.IsNullOrEmpty(UndervoltStatusText) && !UndervoltStatusText.Contains("not supported", StringComparison.OrdinalIgnoreCase) && !UndervoltStatusText.Contains("unavailable", StringComparison.OrdinalIgnoreCase);
+        
         public string UndervoltStatusText => UndervoltStatus?.HasExternalController == true 
             ? $"External controller detected: {UndervoltStatus?.ExternalController ?? "Unknown"}" 
             : (UndervoltStatus?.CurrentCoreOffsetMv != 0 || UndervoltStatus?.CurrentCacheOffsetMv != 0)
@@ -415,6 +421,18 @@ namespace OmenCore.ViewModels
                     TccStatus = TccOffsetStatus.CreateSupported(tjMax, currentOffset);
                     RequestedTccOffset = currentOffset;
                     _logging.Info($"TCC offset available: TjMax={tjMax}°C, Current offset={currentOffset}°C, Effective limit={tjMax - currentOffset}°C");
+                    
+                    // Restore saved TCC offset from config if different from current
+                    var savedOffset = _configService.Config.LastTccOffset;
+                    if (savedOffset.HasValue && savedOffset.Value != currentOffset && savedOffset.Value > 0)
+                    {
+                        // Schedule reapply after a delay to ensure system is ready
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(3000); // Wait 3 seconds for system to stabilize
+                            ReapplySavedTccOffset(savedOffset.Value);
+                        });
+                    }
                 }
                 else
                 {
@@ -429,6 +447,43 @@ namespace OmenCore.ViewModels
             }
         }
         
+        /// <summary>
+        /// Reapply saved TCC offset on startup to maintain temperature limits after reboot.
+        /// </summary>
+        private void ReapplySavedTccOffset(int savedOffset)
+        {
+            if (_msrAccess == null || !TccStatus.IsSupported)
+                return;
+                
+            try
+            {
+                _logging.Info($"Reapplying saved TCC offset on startup: {savedOffset}°C");
+                _msrAccess.SetTccOffset(savedOffset);
+                
+                // Verify it was applied
+                var verifiedOffset = _msrAccess.ReadTccOffset();
+                if (verifiedOffset == savedOffset)
+                {
+                    _logging.Info($"✓ TCC offset restored on startup: {savedOffset}°C (effective limit: {TccStatus.TjMax - savedOffset}°C)");
+                    
+                    // Update UI on dispatcher thread
+                    App.Current?.Dispatcher?.BeginInvoke(() =>
+                    {
+                        RequestedTccOffset = savedOffset;
+                        TccStatus = TccOffsetStatus.CreateSupported(TccStatus.TjMax, savedOffset);
+                    });
+                }
+                else
+                {
+                    _logging.Warn($"TCC offset restoration mismatch: requested {savedOffset}°C, got {verifiedOffset}°C");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to restore TCC offset on startup: {ex.Message}");
+            }
+        }
+        
         private void ApplyTccOffset()
         {
             if (_msrAccess == null || !TccStatus.IsSupported)
@@ -440,6 +495,9 @@ namespace OmenCore.ViewModels
                 var newLimit = TccStatus.TjMax - RequestedTccOffset;
                 _logging.Info($"TCC offset set to {RequestedTccOffset}°C (effective limit: {newLimit}°C)");
                 
+                // Save to config for persistence across reboots
+                SaveTccOffsetToConfig(RequestedTccOffset);
+                
                 // Refresh status
                 var currentOffset = _msrAccess.ReadTccOffset();
                 TccStatus = TccOffsetStatus.CreateSupported(TccStatus.TjMax, currentOffset);
@@ -447,6 +505,21 @@ namespace OmenCore.ViewModels
             catch (Exception ex)
             {
                 _logging.Error($"Failed to apply TCC offset: {ex.Message}", ex);
+            }
+        }
+        
+        private void SaveTccOffsetToConfig(int offset)
+        {
+            try
+            {
+                var config = _configService.Config;
+                config.LastTccOffset = offset;
+                _configService.Save(config);
+                _logging.Info($"TCC offset saved to config: {offset}°C");
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to save TCC offset to config: {ex.Message}");
             }
         }
         

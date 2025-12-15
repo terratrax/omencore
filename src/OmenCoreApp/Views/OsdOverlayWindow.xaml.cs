@@ -172,12 +172,20 @@ namespace OmenCore.Views
                     Left = workArea.Left + 10;
                     Top = workArea.Top + 10;
                     break;
+                case "topcenter":
+                    Left = workArea.Left + (workArea.Width - Width) / 2;
+                    Top = workArea.Top + 10;
+                    break;
                 case "topright":
                     Left = workArea.Right - Width - 10;
                     Top = workArea.Top + 10;
                     break;
                 case "bottomleft":
                     Left = workArea.Left + 10;
+                    Top = workArea.Bottom - Height - 10;
+                    break;
+                case "bottomcenter":
+                    Left = workArea.Left + (workArea.Width - Width) / 2;
                     Top = workArea.Bottom - Height - 10;
                     break;
                 case "bottomright":

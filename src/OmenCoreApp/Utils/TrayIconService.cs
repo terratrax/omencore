@@ -29,6 +29,7 @@ namespace OmenCore.Utils
         private MenuItem? _fanModeMenuItem;
         private MenuItem? _performanceModeMenuItem;
         private MenuItem? _stayOnTopMenuItem;
+        private MenuItem? _displayMenuItem;  // For updating refresh rate display
         private MonitoringSample? _latestSample;
         private string _currentFanMode = "Auto";
         private string _currentPerformanceMode = "Balanced";
@@ -215,7 +216,7 @@ namespace OmenCore.Utils
             contextMenu.Items.Add(_performanceModeMenuItem);
 
             // ═══ DISPLAY SECTION ═══
-            var displayMenuItem = new MenuItem
+            _displayMenuItem = new MenuItem
             {
                 Header = CreateControlItem("🖥️", "Display", GetRefreshRateDisplay(), accentSecondary),
                 Foreground = textPrimary,
@@ -230,16 +231,16 @@ namespace OmenCore.Utils
             var refreshToggle = CreateSubMenuItem("🔄", "Toggle Refresh Rate", "Switch between high/low", darkMenuItemStyle);
             refreshToggle.Click += (s, e) => ToggleRefreshRate();
             
-            displayMenuItem.Items.Add(refreshHigh);
-            displayMenuItem.Items.Add(refreshLow);
-            displayMenuItem.Items.Add(refreshToggle);
-            displayMenuItem.Items.Add(CreateStyledSeparator(borderBrush));
+            _displayMenuItem.Items.Add(refreshHigh);
+            _displayMenuItem.Items.Add(refreshLow);
+            _displayMenuItem.Items.Add(refreshToggle);
+            _displayMenuItem.Items.Add(CreateStyledSeparator(borderBrush));
             
             var displayOff = CreateSubMenuItem("🌙", "Turn Off Display", "Screen off, system continues", darkMenuItemStyle);
             displayOff.Click += (s, e) => TurnOffDisplay();
-            displayMenuItem.Items.Add(displayOff);
+            _displayMenuItem.Items.Add(displayOff);
             
-            contextMenu.Items.Add(displayMenuItem);
+            contextMenu.Items.Add(_displayMenuItem);
 
             contextMenu.Items.Add(CreateStyledSeparator(borderBrush));
 
@@ -458,6 +459,7 @@ namespace OmenCore.Utils
             if (_displayService.SetHighRefreshRate())
             {
                 App.Logging.Info("✓ Switched to high refresh rate from tray");
+                UpdateRefreshRateMenuItem();
             }
         }
 
@@ -466,6 +468,7 @@ namespace OmenCore.Utils
             if (_displayService.SetLowRefreshRate())
             {
                 App.Logging.Info("✓ Switched to low refresh rate from tray");
+                UpdateRefreshRateMenuItem();
             }
         }
 
@@ -475,6 +478,25 @@ namespace OmenCore.Utils
             if (newRate > 0)
             {
                 App.Logging.Info($"✓ Toggled refresh rate to {newRate}Hz from tray");
+                UpdateRefreshRateMenuItem();
+            }
+        }
+        
+        /// <summary>
+        /// Update the display menu item header to show current refresh rate.
+        /// </summary>
+        private void UpdateRefreshRateMenuItem()
+        {
+            if (_displayMenuItem == null) return;
+            
+            try
+            {
+                var accentSecondary = new SolidColorBrush(Color.FromRgb(139, 69, 235)); // Purple accent
+                _displayMenuItem.Header = CreateControlItem("🖥️", "Display", GetRefreshRateDisplay(), accentSecondary);
+            }
+            catch (Exception ex)
+            {
+                App.Logging.Warn($"Failed to update refresh rate menu item: {ex.Message}");
             }
         }
 
