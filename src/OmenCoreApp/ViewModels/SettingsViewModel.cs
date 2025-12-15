@@ -584,6 +584,227 @@ namespace OmenCore.ViewModels
 
         #endregion
 
+        #region OSD Settings
+
+        public bool OsdEnabled
+        {
+            get => _config.Osd?.Enabled ?? false;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                if (_config.Osd.Enabled != value)
+                {
+                    _config.Osd.Enabled = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public string OsdPosition
+        {
+            get => _config.Osd?.Position ?? "TopLeft";
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                if (_config.Osd.Position != value)
+                {
+                    _config.Osd.Position = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public string[] OsdPositionOptions => new[] { "TopLeft", "TopRight", "BottomLeft", "BottomRight" };
+
+        public string OsdHotkey
+        {
+            get => _config.Osd?.ToggleHotkey ?? "F12";
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                if (_config.Osd.ToggleHotkey != value)
+                {
+                    _config.Osd.ToggleHotkey = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public bool OsdShowCpuTemp
+        {
+            get => _config.Osd?.ShowCpuTemp ?? true;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowCpuTemp = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        public bool OsdShowGpuTemp
+        {
+            get => _config.Osd?.ShowGpuTemp ?? true;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowGpuTemp = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        public bool OsdShowCpuLoad
+        {
+            get => _config.Osd?.ShowCpuLoad ?? true;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowCpuLoad = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        public bool OsdShowGpuLoad
+        {
+            get => _config.Osd?.ShowGpuLoad ?? true;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowGpuLoad = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        public bool OsdShowFanSpeed
+        {
+            get => _config.Osd?.ShowFanSpeed ?? true;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowFanSpeed = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        public bool OsdShowRamUsage
+        {
+            get => _config.Osd?.ShowRamUsage ?? false;
+            set
+            {
+                if (_config.Osd == null) _config.Osd = new OsdSettings();
+                _config.Osd.ShowRamUsage = value;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+
+        #endregion
+
+        #region Battery Settings
+
+        public bool BatteryChargeLimitEnabled
+        {
+            get => _config.Battery?.ChargeLimitEnabled ?? false;
+            set
+            {
+                if (_config.Battery == null) _config.Battery = new BatterySettings();
+                if (_config.Battery.ChargeLimitEnabled != value)
+                {
+                    _config.Battery.ChargeLimitEnabled = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                    // Apply battery care mode immediately
+                    ApplyBatteryChargeLimit(value);
+                }
+            }
+        }
+
+        private void ApplyBatteryChargeLimit(bool enabled)
+        {
+            try
+            {
+                // This will be wired up to HpWmiBios in App.xaml.cs
+                _logging.Info($"Battery charge limit: {(enabled ? "Enabling 80% limit" : "Disabling (full charge)")}");
+            }
+            catch (Exception ex)
+            {
+                _logging.Error($"Failed to apply battery charge limit: {ex.Message}", ex);
+            }
+        }
+
+        #endregion
+
+        #region Fan Hysteresis Settings
+
+        public bool FanHysteresisEnabled
+        {
+            get => _config.FanHysteresis?.Enabled ?? true;
+            set
+            {
+                if (_config.FanHysteresis == null) _config.FanHysteresis = new FanHysteresisSettings();
+                if (_config.FanHysteresis.Enabled != value)
+                {
+                    _config.FanHysteresis.Enabled = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public double FanHysteresisDeadZone
+        {
+            get => _config.FanHysteresis?.DeadZone ?? 3.0;
+            set
+            {
+                if (_config.FanHysteresis == null) _config.FanHysteresis = new FanHysteresisSettings();
+                if (Math.Abs(_config.FanHysteresis.DeadZone - value) > 0.01)
+                {
+                    _config.FanHysteresis.DeadZone = Math.Max(0, Math.Min(10, value));
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public double FanHysteresisRampUpDelay
+        {
+            get => _config.FanHysteresis?.RampUpDelay ?? 0.5;
+            set
+            {
+                if (_config.FanHysteresis == null) _config.FanHysteresis = new FanHysteresisSettings();
+                if (Math.Abs(_config.FanHysteresis.RampUpDelay - value) > 0.01)
+                {
+                    _config.FanHysteresis.RampUpDelay = Math.Max(0, Math.Min(10, value));
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        public double FanHysteresisRampDownDelay
+        {
+            get => _config.FanHysteresis?.RampDownDelay ?? 3.0;
+            set
+            {
+                if (_config.FanHysteresis == null) _config.FanHysteresis = new FanHysteresisSettings();
+                if (Math.Abs(_config.FanHysteresis.RampDownDelay - value) > 0.01)
+                {
+                    _config.FanHysteresis.RampDownDelay = Math.Max(0, Math.Min(30, value));
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        #endregion
+
         #region Fan Cleaning
 
         public string FanCleaningStatusText

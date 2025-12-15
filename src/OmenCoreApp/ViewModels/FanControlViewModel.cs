@@ -98,6 +98,9 @@ namespace OmenCore.ViewModels
             _configService = configService;
             _logging = logging;
             
+            // Load hysteresis settings from config
+            _fanService.SetHysteresis(_configService.Config.FanHysteresis);
+            
             ApplyCustomCurveCommand = new RelayCommand(_ => ApplyCustomCurve());
             SaveCustomPresetCommand = new RelayCommand(_ => SaveCustomPreset());
             ImportPresetsCommand = new RelayCommand(_ => ImportPresets());

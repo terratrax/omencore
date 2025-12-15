@@ -1,0 +1,103 @@
+<Window x:Class="OmenCore.Views.OsdOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OmenCore OSD"
+        Width="200" Height="Auto"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        Focusable="False"
+        IsHitTestVisible="False">
+    
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </Window.Resources>
+    
+    <Border Background="#CC1A1A2E" 
+            BorderBrush="#44FF005C" 
+            BorderThickness="1" 
+            CornerRadius="6"
+            Padding="10,8"
+            Margin="5">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Opacity="0.5" BlurRadius="10" ShadowDepth="2"/>
+        </Border.Effect>
+        
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="OmenCore" 
+                       FontSize="10" 
+                       FontWeight="Bold" 
+                       Foreground="#FF005C" 
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,6"/>
+            
+            <!-- CPU Stats -->
+            <Grid Margin="0,2" Visibility="{Binding ShowCpuTemp, Converter={StaticResource BoolToVisibility}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="CPU" FontSize="11" Foreground="#AAA" FontFamily="Consolas"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding CpuTemp, StringFormat={}{0:F0}°C}" FontSize="11" Foreground="White" FontFamily="Consolas"/>
+                    <TextBlock Text=" " FontSize="11" Visibility="{Binding ShowCpuLoad, Converter={StaticResource BoolToVisibility}}"/>
+                    <TextBlock Text="{Binding CpuLoad, StringFormat={}{0:F0}%}" FontSize="11" Foreground="#FF005C" FontFamily="Consolas" 
+                               Visibility="{Binding ShowCpuLoad, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+            </Grid>
+            
+            <!-- GPU Stats -->
+            <Grid Margin="0,2" Visibility="{Binding ShowGpuTemp, Converter={StaticResource BoolToVisibility}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="GPU" FontSize="11" Foreground="#AAA" FontFamily="Consolas"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding GpuTemp, StringFormat={}{0:F0}°C}" FontSize="11" Foreground="White" FontFamily="Consolas"/>
+                    <TextBlock Text=" " FontSize="11" Visibility="{Binding ShowGpuLoad, Converter={StaticResource BoolToVisibility}}"/>
+                    <TextBlock Text="{Binding GpuLoad, StringFormat={}{0:F0}%}" FontSize="11" Foreground="#00D4FF" FontFamily="Consolas" 
+                               Visibility="{Binding ShowGpuLoad, Converter={StaticResource BoolToVisibility}}"/>
+                </StackPanel>
+            </Grid>
+            
+            <!-- Fan Speed -->
+            <Grid Margin="0,2" Visibility="{Binding ShowFanSpeed, Converter={StaticResource BoolToVisibility}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="FAN" FontSize="11" Foreground="#AAA" FontFamily="Consolas"/>
+                <TextBlock Grid.Column="2" Text="{Binding FanSpeed}" FontSize="11" Foreground="#AAAAAA" FontFamily="Consolas" HorizontalAlignment="Right"/>
+            </Grid>
+            
+            <!-- RAM Usage -->
+            <Grid Margin="0,2" Visibility="{Binding ShowRamUsage, Converter={StaticResource BoolToVisibility}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="RAM" FontSize="11" Foreground="#AAA" FontFamily="Consolas"/>
+                <TextBlock Grid.Column="2" Text="{Binding RamUsage}" FontSize="11" Foreground="#AAAAAA" FontFamily="Consolas" HorizontalAlignment="Right"/>
+            </Grid>
+            
+            <!-- Throttling Warning -->
+            <Border Background="#44FF4444" 
+                    CornerRadius="3" 
+                    Padding="4,2" 
+                    Margin="0,4,0,0"
+                    Visibility="{Binding IsThrottling, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="⚠ THROTTLING" FontSize="9" Foreground="#FF6666" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

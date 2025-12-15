@@ -16,6 +16,7 @@ namespace OmenCore.Services
     /// 1. Continuous curve application: Every CurveUpdateIntervalMs, reads temps and applies curve
     /// 2. Adaptive polling: Longer intervals when temps are stable, shorter when changing
     /// 3. Separate monitoring vs control loops to reduce DPC latency
+    /// 4. Hysteresis support to prevent fan oscillation
     /// </summary>
     public class FanService : IDisposable
     {
@@ -46,6 +47,13 @@ namespace OmenCore.Services
         private int _stableReadings = 0;
         private const int StableThreshold = 3; // Number of stable readings before slowing down
         private const double TempChangeThreshold = 3.0; // °C change to trigger faster polling
+        
+        // Hysteresis state
+        private FanHysteresisSettings _hysteresis = new();
+        private double _lastHysteresisTemp = 0;
+        private DateTime _lastFanChangeRequest = DateTime.MinValue;
+        private int _pendingFanPercent = -1;
+        private bool _pendingIncrease = false;
 
         public ReadOnlyObservableCollection<ThermalSample> ThermalSamples { get; }
         public ReadOnlyObservableCollection<FanTelemetry> FanTelemetry { get; }
@@ -64,6 +72,15 @@ namespace OmenCore.Services
         /// The currently active preset name, if any.
         /// </summary>
         public string? ActivePresetName => _activePreset?.Name;
+        
+        /// <summary>
+        /// Configure hysteresis settings to prevent fan oscillation.
+        /// </summary>
+        public void SetHysteresis(FanHysteresisSettings settings)
+        {
+            _hysteresis = settings ?? new FanHysteresisSettings();
+            _logging.Info($"Fan hysteresis: {(_hysteresis.Enabled ? $"Enabled (deadzone={_hysteresis.DeadZone}°C, ramp↑={_hysteresis.RampUpDelay}s, ramp↓={_hysteresis.RampDownDelay}s)" : "Disabled")}");
+        }
 
         /// <summary>
         /// Create FanService with the new IFanController interface.
@@ -302,7 +319,7 @@ namespace OmenCore.Services
         
         /// <summary>
         /// Apply fan curve based on current temperature if curve is enabled.
-        /// This is the core OmenMon-style continuous fan control.
+        /// This is the core OmenMon-style continuous fan control with hysteresis support.
         /// </summary>
         private void ApplyCurveIfNeeded(double cpuTemp, double gpuTemp)
         {
@@ -331,17 +348,57 @@ namespace OmenCore.Services
                                       
                     if (targetPoint == null) return;
                     
+                    var targetFanPercent = targetPoint.FanPercent;
+                    
+                    // Apply hysteresis if enabled
+                    if (_hysteresis.Enabled && _lastAppliedFanPercent >= 0)
+                    {
+                        var tempDelta = Math.Abs(maxTemp - _lastHysteresisTemp);
+                        
+                        // Check if temperature change is within dead-zone
+                        if (tempDelta < _hysteresis.DeadZone && targetFanPercent != _lastAppliedFanPercent)
+                        {
+                            // Within dead-zone, don't change fan speed
+                            _lastCurveUpdate = now;
+                            return;
+                        }
+                        
+                        // Apply ramp delay for speed changes
+                        bool isIncrease = targetFanPercent > _lastAppliedFanPercent;
+                        double requiredDelay = isIncrease ? _hysteresis.RampUpDelay : _hysteresis.RampDownDelay;
+                        
+                        if (_pendingFanPercent != targetFanPercent)
+                        {
+                            // New target, start delay timer
+                            _pendingFanPercent = targetFanPercent;
+                            _pendingIncrease = isIncrease;
+                            _lastFanChangeRequest = now;
+                            _lastCurveUpdate = now;
+                            return;
+                        }
+                        
+                        // Check if delay has elapsed
+                        var timeSinceRequest = (now - _lastFanChangeRequest).TotalSeconds;
+                        if (timeSinceRequest < requiredDelay)
+                        {
+                            _lastCurveUpdate = now;
+                            return;
+                        }
+                    }
+                    
                     // Only apply if fan percent changed (avoid unnecessary WMI calls)
-                    if (targetPoint.FanPercent != _lastAppliedFanPercent)
+                    if (targetFanPercent != _lastAppliedFanPercent)
                     {
                         // Convert percentage to krpm (0-100% maps to 0-55 krpm)
-                        byte fanLevel = (byte)(targetPoint.FanPercent * 55 / 100);
+                        byte fanLevel = (byte)(targetFanPercent * 55 / 100);
                         
                         // Use SetFanSpeed which internally calls SetFanLevel
-                        if (_fanController.SetFanSpeed(targetPoint.FanPercent))
+                        if (_fanController.SetFanSpeed(targetFanPercent))
                         {
-                            _lastAppliedFanPercent = targetPoint.FanPercent;
-                            _logging.Info($"Curve applied: {targetPoint.FanPercent}% @ {maxTemp:F1}°C (level: {fanLevel})");
+                            _lastAppliedFanPercent = targetFanPercent;
+                            _lastHysteresisTemp = maxTemp;
+                            _pendingFanPercent = -1;
+                            _logging.Info($"Curve applied: {targetFanPercent}% @ {maxTemp:F1}°C (level: {fanLevel})");
                         }
                     }
                     

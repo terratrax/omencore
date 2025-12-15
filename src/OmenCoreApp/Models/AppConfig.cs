@@ -20,6 +20,9 @@ namespace OmenCore.Models
         public MonitoringPreferences Monitoring { get; set; } = new();
         public UpdatePreferences Updates { get; set; } = new();
         public FeaturePreferences Features { get; set; } = new();
+        public FanHysteresisSettings FanHysteresis { get; set; } = new();
+        public OsdSettings Osd { get; set; } = new();
+        public BatterySettings Battery { get; set; } = new();
         public bool FirstRunCompleted { get; set; } = false;
         
         /// <summary>
@@ -77,5 +80,74 @@ namespace OmenCore.Models
         public string BatteryFanPreset { get; set; } = "Quiet";
         public string BatteryPerformanceMode { get; set; } = "Silent";
         public string BatteryGpuMode { get; set; } = "Eco";
+    }
+    
+    /// <summary>
+    /// Fan hysteresis settings to prevent fan speed oscillation.
+    /// </summary>
+    public class FanHysteresisSettings
+    {
+        /// <summary>Enable hysteresis (dead-zone) to prevent fan oscillation</summary>
+        public bool Enabled { get; set; } = true;
+        
+        /// <summary>Temperature dead-zone in °C. Fans won't change unless temp moves beyond this threshold.</summary>
+        public double DeadZone { get; set; } = 3.0;
+        
+        /// <summary>Ramp-up delay in seconds before increasing fan speed.</summary>
+        public double RampUpDelay { get; set; } = 0.5;
+        
+        /// <summary>Ramp-down delay in seconds before decreasing fan speed.</summary>
+        public double RampDownDelay { get; set; } = 3.0;
+    }
+    
+    /// <summary>
+    /// In-game OSD overlay settings.
+    /// </summary>
+    public class OsdSettings
+    {
+        /// <summary>Master toggle - when disabled, no OSD process runs at all</summary>
+        public bool Enabled { get; set; } = false;
+        
+        /// <summary>Toggle hotkey (e.g., F12)</summary>
+        public string ToggleHotkey { get; set; } = "F12";
+        
+        /// <summary>Position: TopLeft, TopRight, BottomLeft, BottomRight</summary>
+        public string Position { get; set; } = "TopLeft";
+        
+        /// <summary>Opacity 0.0-1.0</summary>
+        public double Opacity { get; set; } = 0.85;
+        
+        /// <summary>Show CPU temperature</summary>
+        public bool ShowCpuTemp { get; set; } = true;
+        
+        /// <summary>Show GPU temperature</summary>
+        public bool ShowGpuTemp { get; set; } = true;
+        
+        /// <summary>Show CPU load</summary>
+        public bool ShowCpuLoad { get; set; } = true;
+        
+        /// <summary>Show GPU load</summary>
+        public bool ShowGpuLoad { get; set; } = true;
+        
+        /// <summary>Show fan speeds</summary>
+        public bool ShowFanSpeed { get; set; } = true;
+        
+        /// <summary>Show RAM usage</summary>
+        public bool ShowRamUsage { get; set; } = false;
+        
+        /// <summary>Show current FPS (requires integration)</summary>
+        public bool ShowFps { get; set; } = false;
+    }
+    
+    /// <summary>
+    /// Battery care settings.
+    /// </summary>
+    public class BatterySettings
+    {
+        /// <summary>Enable 80% charge limit for battery longevity</summary>
+        public bool ChargeLimitEnabled { get; set; } = false;
+        
+        /// <summary>Show battery health warnings</summary>
+        public bool ShowHealthWarnings { get; set; } = true;
     }
 }

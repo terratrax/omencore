@@ -1092,6 +1092,221 @@
                     </StackPanel>
                 </Border>
 
+                <!-- In-Game OSD Settings -->
+                <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="📊" FontSize="24" 
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="In-Game OSD" FontSize="20" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="On-screen overlay showing system stats during gaming" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Master Enable -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Enable OSD Overlay" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="When disabled, no OSD background process runs at all" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="1" 
+                                          Style="{StaticResource ModernToggleButton}"
+                                          IsChecked="{Binding OsdEnabled}"/>
+                        </Grid>
+
+                        <Border Background="#1A6B4C9A" CornerRadius="8" Padding="16" 
+                                IsEnabled="{Binding OsdEnabled}">
+                            <StackPanel>
+                                <!-- Position -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="150"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Position" FontSize="13" 
+                                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" 
+                                              SelectedItem="{Binding OsdPosition, Mode=TwoWay}"
+                                              ItemsSource="{Binding OsdPositionOptions}"/>
+                                </Grid>
+
+                                <!-- Hotkey -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="150"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Toggle Hotkey" FontSize="13" 
+                                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding OsdHotkey, Mode=TwoWay}" 
+                                             Padding="8,6"/>
+                                </Grid>
+
+                                <!-- Metrics Selection -->
+                                <TextBlock Text="Metrics to Display" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,4,0,8"/>
+                                <WrapPanel>
+                                    <CheckBox Content="CPU Temp" IsChecked="{Binding OsdShowCpuTemp}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="GPU Temp" IsChecked="{Binding OsdShowGpuTemp}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="CPU Load" IsChecked="{Binding OsdShowCpuLoad}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="GPU Load" IsChecked="{Binding OsdShowGpuLoad}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="Fan Speed" IsChecked="{Binding OsdShowFanSpeed}" Margin="0,0,16,8"/>
+                                    <CheckBox Content="RAM Usage" IsChecked="{Binding OsdShowRamUsage}" Margin="0,0,16,8"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Battery Care Settings -->
+                <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="🔋" FontSize="24" 
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="Battery Care" FontSize="20" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Extend battery lifespan with charge limiting" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Charge Limit -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Limit Charge to 80%" FontSize="14" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Preserves battery health by stopping charge at 80%" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="1" 
+                                          Style="{StaticResource ModernToggleButton}"
+                                          IsChecked="{Binding BatteryChargeLimitEnabled}"/>
+                        </Grid>
+
+                        <Border Background="#1A4CAF50" CornerRadius="4" Padding="12" Margin="0,8,0,0">
+                            <TextBlock TextWrapping="Wrap" FontSize="12" 
+                                       Foreground="{StaticResource TextSecondaryBrush}">
+                                <Run FontWeight="SemiBold" Foreground="#81C784">💡 Battery Health:</Run>
+                                Limiting charge to 80% can extend your battery's lifespan by 2-4x.
+                                This is especially useful if your laptop is usually plugged in.
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Fan Hysteresis Settings -->
+                <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="🌀" FontSize="24" 
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="Fan Hysteresis" FontSize="20" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Prevent fan speed oscillation with dead-zone and delays" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Enable -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Enable Hysteresis" FontSize="14" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Smooth out fan speed changes to reduce noise fluctuation" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="1" 
+                                          Style="{StaticResource ModernToggleButton}"
+                                          IsChecked="{Binding FanHysteresisEnabled}"/>
+                        </Grid>
+
+                        <Border Background="#1A6B4C9A" CornerRadius="8" Padding="16" 
+                                IsEnabled="{Binding FanHysteresisEnabled}">
+                            <StackPanel>
+                                <!-- Dead Zone -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Temperature Dead-Zone" FontSize="13" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="Fans won't change unless temp moves beyond this" FontSize="11" 
+                                                   Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBox Text="{Binding FanHysteresisDeadZone, StringFormat=F1}" 
+                                                 Width="50" Padding="6,4" TextAlignment="Right"/>
+                                        <TextBlock Text="°C" VerticalAlignment="Center" Margin="4,0,0,0" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Ramp Up Delay -->
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Ramp-Up Delay" FontSize="13" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="Wait before increasing fan speed" FontSize="11" 
+                                                   Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBox Text="{Binding FanHysteresisRampUpDelay, StringFormat=F1}" 
+                                                 Width="50" Padding="6,4" TextAlignment="Right"/>
+                                        <TextBlock Text="s" VerticalAlignment="Center" Margin="4,0,0,0" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Ramp Down Delay -->
+                                <Grid Margin="0,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Ramp-Down Delay" FontSize="13" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="Wait before decreasing fan speed" FontSize="11" 
+                                                   Foreground="{StaticResource TextTertiaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBox Text="{Binding FanHysteresisRampDownDelay, StringFormat=F1}" 
+                                                 Width="50" Padding="6,4" TextAlignment="Right"/>
+                                        <TextBlock Text="s" VerticalAlignment="Center" Margin="4,0,0,0" 
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
                 <!-- Data & Storage -->
                 <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
                     <StackPanel>

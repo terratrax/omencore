@@ -88,6 +88,8 @@ namespace OmenCore.Hardware
         private const uint CMD_COLOR_SET = 0x03;      // SetColorTable - uses Keyboard cmd
         private const uint CMD_THROTTLE_GET = 0x35;
         private const uint CMD_IDLE_SET = 0x31;       // SetIdle (OmenMon 0x31)
+        private const uint CMD_BATTERY_CARE = 0x24;   // Battery care mode (charge limit)
+        private const uint CMD_SMART_ADAPTER = 0x25;  // Smart adapter status
         
         /// <summary>
         /// Fan performance mode enumeration.
@@ -942,6 +944,82 @@ namespace OmenCore.Hardware
                 return false;
             }
         }
+
+        #region Battery Care (Charge Limit)
+        
+        /// <summary>
+        /// Battery care mode setting for limiting charge to preserve battery health.
+        /// </summary>
+        public enum BatteryCareMode : byte
+        {
+            /// <summary>Charge to 100% (default)</summary>
+            Disabled = 0x00,
+            /// <summary>Limit charge to ~80% for longevity</summary>
+            Enabled = 0x01
+        }
+        
+        /// <summary>
+        /// Get current battery care mode (charge limit status).
+        /// </summary>
+        /// <returns>True if charge limit is enabled (~80%), False if full charge, null if unavailable</returns>
+        public bool? GetBatteryCareMode()
+        {
+            if (!_isAvailable) return null;
+            
+            try
+            {
+                var result = SendBiosCommand(BiosCmd.Default, CMD_BATTERY_CARE, new byte[4], 4);
+                if (result != null && result.Length >= 1)
+                {
+                    var enabled = result[0] == (byte)BatteryCareMode.Enabled;
+                    _logging?.Info($"Battery care mode: {(enabled ? "Enabled (80%)" : "Disabled (100%)")}");
+                    return enabled;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging?.Warn($"Failed to get battery care mode: {ex.Message}");
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Set battery care mode (charge limit).
+        /// When enabled, battery will only charge to ~80% to preserve longevity.
+        /// </summary>
+        /// <param name="enabled">True to limit to 80%, False for full charge</param>
+        /// <returns>True if successful</returns>
+        public bool SetBatteryCareMode(bool enabled)
+        {
+            if (!_isAvailable)
+            {
+                _logging?.Warn("Cannot set battery care mode: WMI BIOS not available");
+                return false;
+            }
+            
+            try
+            {
+                var data = new byte[4];
+                data[0] = enabled ? (byte)BatteryCareMode.Enabled : (byte)BatteryCareMode.Disabled;
+                data[1] = 0x00;
+                data[2] = 0x00;
+                data[3] = 0x00;
+                
+                var result = SendBiosCommand(BiosCmd.Default, CMD_BATTERY_CARE, data, 0);
+                if (result != null)
+                {
+                    _logging?.Info($"✓ Battery care mode set: {(enabled ? "Enabled (80%)" : "Disabled (100%)")}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging?.Error($"Failed to set battery care mode: {ex.Message}", ex);
+            }
+            return false;
+        }
+        
+        #endregion
 
         public void Dispose()
         {
