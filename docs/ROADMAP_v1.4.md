@@ -154,6 +154,72 @@ Full per-key RGB control for OMEN keyboards that support it.
 
 ---
 
+### 2b. 4-Zone Keyboard Interactive Controls (NEW - beta2 feedback)
+**Status:** UI exists but non-functional  
+**Effort:** Medium  
+**Impact:** High  
+**Files:** `Views/LightingView.xaml`, `ViewModels/LightingViewModel.cs`, `Services/KeyboardLightingService.cs`
+
+The HP OMEN Keyboard section in RGB & Peripherals tab shows 4 zone boxes but they are completely static - cannot be clicked, no color picker, no apply button. Need to make this functional.
+
+**Current State:**
+- Zone boxes are display-only (Border elements with static colors)
+- No click handlers or color pickers
+- No binding to KeyboardLightingService
+- Backend (WMI BIOS) is now wired up but UI doesn't use it
+
+**Features Needed:**
+- Clickable zone boxes that open color picker
+- Per-zone color selection with preview
+- "Apply" button to send colors to keyboard via WMI BIOS
+- "Apply All" to set all zones to same color
+- Save/load zone color presets
+- Real-time preview of current keyboard colors
+
+**Implementation Tickets:**
+```
+[KB4Z-1] Add zone color bindings to LightingViewModel
+  - Zone1Color, Zone2Color, Zone3Color, Zone4Color properties
+  - KeyboardLightingService injection
+  - ApplyZoneColorsCommand, ApplyAllZonesCommand
+
+[KB4Z-2] Make zone boxes interactive in LightingView.xaml
+  - Add click handlers to zone Border elements
+  - Open ColorPicker popup on click
+  - Bind zone fill colors to ViewModel properties
+  - Add "Apply to Keyboard" button
+
+[KB4Z-3] Wire up KeyboardLightingService
+  - Call SetZoneColor() for individual zones
+  - Call SetAllZoneColors() for batch update
+  - Read current colors on startup (GetColorTable)
+  - Error handling with user feedback
+
+[KB4Z-4] Add keyboard color presets
+  - Built-in presets: Red, Gaming (red gradient), Cool (blue), etc.
+  - Custom preset save/load
+  - Quick-apply dropdown
+```
+
+**UI Mockup:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HP OMEN Keyboard                                            │
+│ Your laptop's built-in 4-zone RGB keyboard                  │
+├─────────────────────────────────────────────────────────────┤
+│ KEYBOARD ZONES (click to change color)                      │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐        │
+│ │  Zone 1  │ │  Zone 2  │ │  Zone 3  │ │  Zone 4  │        │
+│ │   Left   │ │ Middle-L │ │ Middle-R │ │   Right  │        │
+│ │    🔴    │ │    🔵    │ │    🟣    │ │    🔵    │        │
+│ └──────────┘ └──────────┘ └──────────┘ └──────────┘        │
+│                                                             │
+│ Preset: [Gaming ▼]  [Apply to Keyboard]  [All Same Color]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ### 3. Startup Reliability Improvements (NEW)
 **Status:** New - based on beta2 issues  
 **Effort:** Medium  
