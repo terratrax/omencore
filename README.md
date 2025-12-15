@@ -11,7 +11,7 @@ OmenCore is a **complete replacement** for HP OMEN Gaming Hub - no OGH services 
 - ✅ **No Ads** - Clean, focused interface
 - ✅ **No Sign-In Required** - Full offline operation
 
-[![Version](https://img.shields.io/badge/version-1.3.0--beta2-blue.svg)](https://github.com/Jeyloh/OmenCore/releases/tag/v1.3.0-beta2)
+[![Version](https://img.shields.io/badge/version-1.4.0--beta2-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v1.4.0-beta2)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Website](https://img.shields.io/badge/website-omencore.info-brightgreen.svg)](https://omencore.info)
@@ -22,41 +22,32 @@ OmenCore is a **complete replacement** for HP OMEN Gaming Hub - no OGH services 
 
 ---
 
-## 🆕 What's New in v1.3.0-beta2
+## 🆕 What's New in v1.4.0-beta2
+
+### 🎨 Interactive 4-Zone Keyboard Controls
+- **Visual Zone Editor** - Click zones to select and edit colors
+- **Hex Color Input** - Enter precise colors (#FF0000, #00D4FF, etc.)
+- **Quick Presets** - OMEN Red, Dragon Purple, Cyber Blue, and more
+- **Apply Buttons** - "Apply to Keyboard" and "All Same Color" options
+
+### 🚀 Startup & Reliability
+- **StartupSequencer Service** - Boot-time reliability with retry logic
+- **Splash Screen** - Branded OMEN loading experience
+- **Notification Center** - In-app notifications with read/unread tracking
 
 ### 🐛 Critical Bug Fixes
-- **Fan presets now work** - All presets (Auto, Quiet, Max) function correctly
-- **GPU Power Boost persists** - TGP settings survive Windows restart
-- **OSD overlay fixed** - Works when starting minimized to tray
-- **OMEN key interception fixed** - ShowQuickPopup is now the default action
-- **Start minimized reliable** - Consistent tray-only startup
-- **Intel XTU false positive fixed** - Proper service detection
+- **Auto-update fixed** - Now properly detects v1.4.0-beta2 from v1.3.0-beta2
+- **OGH detection fixed** - No longer falsely detects OGH after uninstall
+- **XTU detection fixed** - Checks services, not processes
+- **Version display fixed** - Now shows correct 1.4.0 version
+- **Keyboard RGB improved** - Dual-write (WMI + EC) for better compatibility
+- **SSD sensor hide** - Storage widget hides when no temp data
+- **Overlay hotkey retry** - Works when starting minimized
 
-### 🎯 Complete OGH Independence
-- **WMI BIOS First** - Direct firmware communication without OGH services
-- **No OGH Required** - Uninstall OMEN Gaming Hub completely, OmenCore works standalone
-- **Model Family Detection** - Automatically identifies OMEN 16/17, Victus, Transcend, Desktop
-- **Command Verification** - Detects if fan commands actually work on your model
-
-### 🔥 Fan Control That Actually Works
-- **Continuous Monitoring** - OmenMon-style 15-second curve reapplication
-- **Fan curves now work** - Settings persist instead of reverting after seconds
-- **MAX mode fix** - Robust reset sequence to exit max fan mode
-- **Hysteresis support** - Prevents annoying fan oscillation
-- **More aggressive curves** - Based on OmenMon profiles to prevent throttling
-
-### ⚡ Performance Improvements  
-- **Reduced DPC Latency** - Adaptive polling (1-5s based on temp stability)
-- **Lower CPU Usage** - 5x slower polling in low overhead mode
-- **Fast Startup** - Async service initialization
-- **Temperature smoothing** - EMA-based smooth display values
-
-### ✨ New Features
-- **Quick Popup** (middle-click tray) - Instant temp/fan control
-- **Battery Care Mode** - Limit charge to 80% for battery longevity
-- **In-Game OSD** - Click-through overlay showing temps/FPS
-- **Tray Quick Profiles** - Fast mode switching from system tray
-- **OMEN Key Interception** - Use OMEN key to show Quick Popup
+### 🔧 Under the Hood
+- **Semver support** - Proper prerelease version comparison (beta2 > beta1)
+- **ServiceController** - More reliable OGH/XTU detection
+- **Thermal protection** - More aggressive fan ramping (80°C warning, 88°C emergency)
 
 See [CHANGELOG_v1.3.0-beta2.md](docs/CHANGELOG_v1.3.0-beta2.md) for full details.
 
