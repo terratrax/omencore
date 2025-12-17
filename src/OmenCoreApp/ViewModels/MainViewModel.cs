@@ -1100,6 +1100,10 @@ namespace OmenCore.ViewModels
             _omenKeyService.CyclePerformanceRequested += OnHotkeyTogglePerformanceMode;
             _omenKeyService.CycleFanModeRequested += OnHotkeyToggleFanMode;
             _omenKeyService.ToggleMaxCoolingRequested += OnOmenKeyToggleMaxCooling;
+            
+            // Subscribe to service events for UI synchronization (e.g., power automation changes)
+            _fanService.PresetApplied += OnFanPresetApplied;
+            _performanceModeService.ModeApplied += OnPerformanceModeApplied;
 
             // Initialize sub-ViewModels that don't depend on async services
             // InitializeSubViewModels(); // Removed in favor of lazy loading
@@ -2065,17 +2069,23 @@ namespace OmenCore.ViewModels
 
         private void HandleLogLine(string entry)
         {
+            // Skip empty entries to reduce log clutter
+            if (string.IsNullOrWhiteSpace(entry)) return;
+            
             Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
-                _logBuffer.AppendLine(entry);
-                var lines = _logBuffer.ToString().Split('\n');
+                // Append without extra newline padding
+                if (_logBuffer.Length > 0)
+                    _logBuffer.Append('\n');
+                _logBuffer.Append(entry.TrimEnd());
+                
+                // Keep only last 200 lines to prevent memory growth
+                var content = _logBuffer.ToString();
+                var lines = content.Split('\n');
                 if (lines.Length > 200)
                 {
                     _logBuffer.Clear();
-                    foreach (var line in lines.Skip(lines.Length - 200))
-                    {
-                        _logBuffer.AppendLine(line);
-                    }
+                    _logBuffer.Append(string.Join("\n", lines.Skip(lines.Length - 200)));
                 }
                 OnPropertyChanged(nameof(LogBuffer));
             });
@@ -2556,16 +2566,75 @@ namespace OmenCore.ViewModels
         }
 
         /// <summary>
+        /// Handle fan preset changes from FanService (e.g., power automation).
+        /// Updates all UI indicators: sidebar, tray, dashboard.
+        /// </summary>
+        private void OnFanPresetApplied(object? sender, string presetName)
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(() =>
+            {
+                // Update MainViewModel's CurrentFanMode for tray/sidebar sync
+                CurrentFanMode = presetName;
+                
+                // Update Dashboard if loaded
+                if (_dashboard != null)
+                {
+                    _dashboard.CurrentFanMode = presetName;
+                }
+                
+                // Update FanControlViewModel's selected preset if loaded
+                FanControl?.SelectPresetByNameNoApply(presetName);
+                
+                _logging.Info($"UI synced: Fan preset '{presetName}' applied");
+            });
+        }
+
+        /// <summary>
+        /// Handle performance mode changes from PerformanceModeService (e.g., power automation).
+        /// Updates all UI indicators: sidebar, tray, dashboard.
+        /// </summary>
+        private void OnPerformanceModeApplied(object? sender, string modeName)
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(() =>
+            {
+                // Update MainViewModel's CurrentPerformanceMode for tray/sidebar sync
+                CurrentPerformanceMode = modeName;
+                
+                // Update Dashboard if loaded
+                if (_dashboard != null)
+                {
+                    _dashboard.CurrentPerformanceMode = modeName;
+                }
+                
+                // Update SystemControlViewModel's selected mode (without re-applying)
+                SystemControl?.SelectModeByNameNoApply(modeName);
+                
+                _logging.Info($"UI synced: Performance mode '{modeName}' applied");
+            });
+        }
+
+        /// <summary>
         /// Initialize hotkeys after window handle is available
         /// </summary>
         public void InitializeHotkeys(IntPtr windowHandle)
         {
             try
             {
+                // Only register hotkeys if enabled in settings
+                var hotkeysEnabled = _config.Monitoring?.HotkeysEnabled ?? true;
+                
                 _hotkeyService.Initialize(windowHandle);
-                _hotkeyService.RegisterDefaultHotkeys();
-                _logging.Info("Global hotkeys registered");
-                PushEvent("⌨️ Global hotkeys enabled");
+                
+                if (hotkeysEnabled)
+                {
+                    _hotkeyService.RegisterDefaultHotkeys();
+                    _logging.Info("Global hotkeys registered");
+                    PushEvent("⌨️ Global hotkeys enabled");
+                }
+                else
+                {
+                    _logging.Info("Global hotkeys disabled by user setting");
+                }
                 
                 // Start OMEN key interception if enabled
                 var omenKeyEnabled = _config.Features?.OmenKeyInterceptionEnabled ?? _config.OmenKeyEnabled;

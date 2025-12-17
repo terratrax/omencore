@@ -666,18 +666,23 @@ namespace OmenCore.ViewModels
                     if (value)
                     {
                         var result = MessageBox.Show(
-                            "⚠️ WARNING: EXPERIMENTAL FEATURE ⚠️\n\n" +
-                            "Direct EC keyboard writes can cause HARD SYSTEM CRASHES on some OMEN models.\n\n" +
+                            "🛑 DANGER: HIGH-RISK EXPERIMENTAL FEATURE 🛑\n\n" +
+                            "Direct EC keyboard writes can cause:\n" +
+                            "• HARD SYSTEM CRASHES requiring forced restart\n" +
+                            "• Screen brightness stuck at minimum (black screen)\n" +
+                            "• Keyboard/display controller malfunction\n" +
+                            "• Other unpredictable EC-related issues\n\n" +
                             "EC keyboard registers (0xB2-0xBE) vary by laptop model. Writing to wrong addresses " +
-                            "caused system crashes on OMEN 17-ck2xxx requiring forced restart.\n\n" +
-                            "Only enable this if:\n" +
-                            "• WMI keyboard lighting doesn't work on your model\n" +
-                            "• You are willing to risk a system crash\n" +
-                            "• You have important work saved\n\n" +
-                            "Enable experimental EC keyboard control?",
-                            "Experimental Feature Warning",
+                            "has caused system crashes and display issues on various OMEN models.\n\n" +
+                            "If your screen goes black after enabling this:\n" +
+                            "1. Restart your laptop (hold power 10 seconds)\n" +
+                            "2. Delete config: %APPDATA%\\OmenCore\\config.json\n" +
+                            "3. Or reinstall OmenCore\n\n" +
+                            "Only enable this if WMI keyboard lighting doesn't work on your model.\n\n" +
+                            "ENABLE AT YOUR OWN RISK?",
+                            "⚠️ Experimental Feature Warning",
                             MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning,
+                            MessageBoxImage.Stop,
                             MessageBoxResult.No);
                         
                         if (result != MessageBoxResult.Yes)
@@ -685,7 +690,7 @@ namespace OmenCore.ViewModels
                             return; // User cancelled
                         }
                         
-                        _logging.Warn("⚠️ User enabled experimental EC keyboard writes - system crash risk!");
+                        _logging.Warn("⚠️ User enabled experimental EC keyboard writes - system crash/display risk!");
                     }
                     
                     _config.ExperimentalEcKeyboardEnabled = value;
@@ -1467,8 +1472,11 @@ namespace OmenCore.ViewModels
                 if (string.IsNullOrEmpty(exePath)) return;
                 
                 // Use Task Scheduler for elevated startup (required for hardware access)
-                // This method works better than registry Run key which doesn't elevate
+                // Don't use registry Run key - it causes double startup with installer shortcut
                 var taskName = "OmenCore";
+                
+                // Always clean up old startup methods first to avoid duplicates
+                CleanupOldStartupMethods(exePath);
                 
                 if (enable)
                 {
@@ -1493,12 +1501,13 @@ namespace OmenCore.ViewModels
                     catch { /* Task may not exist, ignore */ }
                     
                     // Create scheduled task with highest privileges (runs as admin on logon)
+                    // Use --minimized flag to start minimized to tray
                     var createProcess = new Process
                     {
                         StartInfo = new ProcessStartInfo
                         {
                             FileName = "schtasks",
-                            Arguments = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\"\" /sc onlogon /rl highest /f",
+                            Arguments = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\" --minimized\" /sc onlogon /rl highest /f",
                             UseShellExecute = false,
                             CreateNoWindow = true,
                             RedirectStandardOutput = true,
@@ -1513,18 +1522,12 @@ namespace OmenCore.ViewModels
                     if (createProcess.ExitCode == 0)
                     {
                         _logging.Info($"Created scheduled task '{taskName}' for elevated startup");
-                        
-                        // Also add to registry as fallback (non-elevated, but ensures app at least tries to start)
-                        using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                        key?.SetValue("OmenCore", $"\"{exePath}\"");
+                        // NOTE: Don't add registry fallback - it causes double startup issues
                     }
                     else
                     {
                         _logging.Warn($"Task Scheduler creation returned exit code {createProcess.ExitCode}: {error}");
-                        // Fall back to registry only
-                        using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                        key?.SetValue("OmenCore", $"\"{exePath}\"");
-                        _logging.Info("Added OmenCore to Windows startup (registry fallback - may not have admin rights)");
+                        _logging.Warn("Auto-start may not work. Try running OmenCore as administrator.");
                     }
                 }
                 else
@@ -1553,15 +1556,38 @@ namespace OmenCore.ViewModels
                         _logging.Warn($"Could not remove scheduled task: {taskEx.Message}");
                     }
                     
-                    // Also remove from registry
-                    using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-                    key?.DeleteValue("OmenCore", false);
                     _logging.Info("Removed OmenCore from Windows startup");
                 }
             }
             catch (Exception ex)
             {
                 _logging.Error("Failed to modify startup settings", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Remove old startup methods that may cause duplicate launches.
+        /// </summary>
+        private void CleanupOldStartupMethods(string exePath)
+        {
+            try
+            {
+                // Remove registry Run entry if it exists (old method)
+                using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+                key?.DeleteValue("OmenCore", false);
+                
+                // Remove startup folder shortcut if it exists (installer method)
+                var startupFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                var shortcutPath = Path.Combine(startupFolder, "OmenCore.lnk");
+                if (File.Exists(shortcutPath))
+                {
+                    File.Delete(shortcutPath);
+                    _logging.Info("Removed old startup folder shortcut");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Could not clean up old startup methods: {ex.Message}");
             }
         }
 

@@ -50,6 +50,7 @@
                                  IsChecked="{Binding IsMaxSelected}"
                                  Command="{Binding ApplyMaxCoolingCommand}"
                                  Style="{StaticResource PresetCardRadioButton}"
+                                 ToolTip="Forces all fans to maximum RPM. Use for heavy gaming or stress tests."
                                  Margin="0,0,8,0">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="🔥" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,4"/>
@@ -64,6 +65,7 @@
                                  IsChecked="{Binding IsGamingSelected}"
                                  Command="{Binding ApplyGamingModeCommand}"
                                  Style="{StaticResource PresetCardRadioButton}"
+                                 ToolTip="Aggressive fan curve that ramps up quickly. Good for gaming sessions."
                                  Margin="0,0,8,0">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="🎮" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,4"/>
@@ -78,6 +80,7 @@
                                  IsChecked="{Binding IsAutoSelected}"
                                  Command="{Binding ApplyAutoModeCommand}"
                                  Style="{StaticResource PresetCardRadioButton}"
+                                 ToolTip="BIOS-controlled balanced curve. Recommended for everyday use."
                                  Margin="0,0,8,0">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="⚖️" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,4"/>
@@ -92,6 +95,7 @@
                                  IsChecked="{Binding IsSilentSelected}"
                                  Command="{Binding ApplyQuietModeCommand}"
                                  Style="{StaticResource PresetCardRadioButton}"
+                                 ToolTip="Prioritizes quiet operation. Fans stay low until temps rise significantly."
                                  Margin="0,0,8,0">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="🔇" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,4"/>
@@ -105,7 +109,8 @@
                                  GroupName="FanPreset"
                                  IsChecked="{Binding IsCustomSelected}"
                                  Command="{Binding ApplyCustomCurveCommand}"
-                                 Style="{StaticResource PresetCardRadioButton}">
+                                 Style="{StaticResource PresetCardRadioButton}"
+                                 ToolTip="Apply your custom fan curve defined in the editor below.">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="⚙️" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                             <TextBlock Text="Custom" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
@@ -138,6 +143,20 @@
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource AccentBrush}" 
                                        VerticalAlignment="Center"/>
+                            <!-- Curve Active Indicator -->
+                            <Border Background="#1A4CAF50" 
+                                    CornerRadius="4" 
+                                    Padding="6,2" 
+                                    Margin="12,0,0,0"
+                                    Visibility="{Binding IsCurveActive, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Curve Active" 
+                                               FontSize="10" 
+                                               Foreground="{StaticResource SuccessBrush}" 
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
                     

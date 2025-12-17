@@ -474,6 +474,14 @@ namespace OmenCore
             _trayIconService?.Dispose();
             _trayIcon?.Dispose();
             
+            // Dispose MainViewModel to restore fan control before shutting down
+            try
+            {
+                var mainViewModel = _serviceProvider?.GetService<MainViewModel>();
+                mainViewModel?.Dispose();
+            }
+            catch { }
+            
             // Release single instance mutex
             if (_singleInstanceMutex != null)
             {

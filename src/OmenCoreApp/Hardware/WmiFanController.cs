@@ -234,6 +234,7 @@ namespace OmenCore.Hardware
 
         /// <summary>
         /// Set fan speed as a percentage (0-100).
+        /// For 100%, uses SetFanMax(true) to achieve maximum RPM beyond SetFanLevel limits.
         /// </summary>
         public bool SetFanSpeed(int percent)
         {
@@ -247,15 +248,52 @@ namespace OmenCore.Hardware
 
             try
             {
-                // Convert percentage to krpm level
-                byte fanLevel = (byte)(percent * 55 / 100);
+                bool success;
                 
-                if (_wmiBios.SetFanLevel(fanLevel, fanLevel))
+                // For 100%, use SetFanMax which bypasses BIOS power limits
+                // SetFanLevel(55) may be capped by BIOS, but SetFanMax achieves true max RPM
+                if (percent >= 100)
+                {
+                    success = _wmiBios.SetFanMax(true);
+                    if (success)
+                    {
+                        _logging?.Info($"✓ Fan speed set to MAX (100%) via SetFanMax");
+                    }
+                    else
+                    {
+                        // Fallback to SetFanLevel if SetFanMax fails
+                        success = _wmiBios.SetFanLevel(55, 55);
+                        if (success)
+                        {
+                            _logging?.Info($"✓ Fan speed set to 100% via SetFanLevel(55) fallback");
+                        }
+                    }
+                }
+                else
+                {
+                    // For <100%, disable max mode first (in case it was enabled)
+                    _wmiBios.SetFanMax(false);
+                    
+                    // Convert percentage to krpm level
+                    byte fanLevel = (byte)(percent * 55 / 100);
+                    success = _wmiBios.SetFanLevel(fanLevel, fanLevel);
+                    
+                    if (success)
+                    {
+                        _logging?.Info($"✓ Fan speed set to {percent}% (Level: {fanLevel})");
+                    }
+                }
+                
+                if (success)
                 {
                     IsManualControlActive = true;
-                    _logging?.Info($"✓ Fan speed set to {percent}% (Level: {fanLevel})");
-                    return true;
+                    
+                    // Start countdown extension to prevent BIOS from reverting
+                    // HP BIOS has a 120-second timeout that resets fan control to auto
+                    StartCountdownExtension();
                 }
+                
+                return success;
             }
             catch (Exception ex)
             {
@@ -641,12 +679,17 @@ namespace OmenCore.Hardware
             
             try
             {
-                // Only extend if we have an active non-default mode
-                if (_lastMode != HpWmiBios.FanMode.Default && _lastMode != HpWmiBios.FanMode.LegacyDefault)
+                // Extend countdown for any manual control mode (preset or custom curve)
+                // IsManualControlActive is set when we apply fan levels directly
+                if (IsManualControlActive || (_lastMode != HpWmiBios.FanMode.Default && _lastMode != HpWmiBios.FanMode.LegacyDefault))
                 {
                     if (_wmiBios.ExtendFanCountdown())
                     {
-                        _logging?.Info($"Fan countdown extended (mode: {_lastMode})");
+                        _logging?.Info($"Fan countdown extended (manual: {IsManualControlActive}, mode: {_lastMode})");
+                    }
+                    else
+                    {
+                        _logging?.Warn("Fan countdown extension failed - BIOS may revert to auto");
                     }
                 }
             }

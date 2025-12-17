@@ -14,6 +14,11 @@ namespace OmenCore.Services
         private readonly LoggingService _logging;
         private string _currentMode = "Default";
 
+        /// <summary>
+        /// Event raised when a performance mode is applied (for UI synchronization).
+        /// </summary>
+        public event EventHandler<string>? ModeApplied;
+
         public PerformanceModeService(
             IFanController fanController, 
             PowerPlanService powerPlanService, 
@@ -82,6 +87,9 @@ namespace OmenCore.Services
             
             _currentMode = mode.Name;
             _logging.Info($"✓ Performance mode '{mode.Name}' applied successfully");
+            
+            // Raise event for UI synchronization (sidebar, tray, etc.)
+            ModeApplied?.Invoke(this, mode.Name);
         }
 
         /// <summary>

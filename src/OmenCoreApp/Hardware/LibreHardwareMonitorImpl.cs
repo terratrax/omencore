@@ -177,26 +177,27 @@ namespace OmenCore.Hardware
                     switch (hardware.HardwareType)
                     {
                         case HardwareType.Cpu:
-                            // AMD Ryzen uses "Core (Tctl/Tdie)" or "Tdie", Intel uses "CPU Package"
-                            // Ryzen AI (Phoenix/Strix Point/Hawk Point) may use different sensor names
-                            // Ryzen 8940HX (Hawk Point) and RTX 5070 systems need special handling
-                            // Try multiple sensor patterns for broad compatibility
-                            var cpuTempSensor = GetSensorExact(hardware, SensorType.Temperature, "CPU Package")  // Intel
+                            // CPU Temperature Selection Priority:
+                            // Use Core #1 for fan control (more stable, less spiky than Package)
+                            // Package temp includes spikes from boost/turbo that cause unnecessary fan ramp
+                            // Core temps are smoothed and better represent actual thermal load
+                            var cpuTempSensor = GetSensor(hardware, SensorType.Temperature, "Core #1")             // Intel Core #1 (stable)
+                                ?? GetSensor(hardware, SensorType.Temperature, "Core #0")                         // Intel Core #0 fallback
+                                ?? GetSensor(hardware, SensorType.Temperature, "Core Average")                    // Avg core temp
+                                ?? GetSensor(hardware, SensorType.Temperature, "Core Max")                        // Max core temp
                                 ?? GetSensorExact(hardware, SensorType.Temperature, "Core (Tctl/Tdie)")           // AMD Ryzen primary
                                 ?? GetSensor(hardware, SensorType.Temperature, "Tctl/Tdie")                       // AMD Ryzen (partial match)
                                 ?? GetSensor(hardware, SensorType.Temperature, "Tctl")                            // AMD older
                                 ?? GetSensor(hardware, SensorType.Temperature, "Tdie")                            // AMD Ryzen alt
                                 ?? GetSensorExact(hardware, SensorType.Temperature, "CPU (Tctl/Tdie)")            // AMD Ryzen variant
-                                ?? GetSensor(hardware, SensorType.Temperature, "CPU")                             // AMD Ryzen AI / generic
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCD1 (Tdie)")                     // AMD CCD1 with Tdie suffix
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCD 1 (Tdie)")                    // AMD CCD 1 with space
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCD1")                            // AMD CCD fallback
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCD 1")                           // AMD CCD with space
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCDs Max")                        // AMD multi-CCD
                                 ?? GetSensor(hardware, SensorType.Temperature, "CCDs Average")                    // AMD multi-CCD avg
-                                ?? GetSensor(hardware, SensorType.Temperature, "Core Max")                        // Max core temp
-                                ?? GetSensor(hardware, SensorType.Temperature, "Core Average")                    // Avg core temp
-                                ?? GetSensor(hardware, SensorType.Temperature, "Core #0")                         // Single core fallback
+                                ?? GetSensorExact(hardware, SensorType.Temperature, "CPU Package")                // Intel Package (fallback)
+                                ?? GetSensor(hardware, SensorType.Temperature, "CPU")                             // AMD Ryzen AI / generic
                                 ?? GetSensor(hardware, SensorType.Temperature, "SoC")                             // AMD APU SoC
                                 ?? GetSensor(hardware, SensorType.Temperature, "Socket")                          // Socket temp
                                 ?? hardware.Sensors.FirstOrDefault(s => s.SensorType == SensorType.Temperature && s.Value > 0);
@@ -293,7 +294,10 @@ namespace OmenCore.Hardware
 
                         case HardwareType.GpuNvidia:
                         case HardwareType.GpuAmd:
-                            // Prefer dedicated GPU (NVIDIA/AMD) over integrated
+                            // GPU Temperature Selection:
+                            // Use "GPU Core" not "Hotspot" - Core is more stable for fan control
+                            // Hotspot spikes during brief load bursts cause unnecessary fan ramp
+                            // Hotspot is still tracked separately (_cachedGpuHotspot) for alerts
                             var gpuTempSensor = GetSensor(hardware, SensorType.Temperature, "GPU Core")
                                 ?? GetSensor(hardware, SensorType.Temperature, "Core")
                                 ?? hardware.Sensors.FirstOrDefault(s => s.SensorType == SensorType.Temperature);

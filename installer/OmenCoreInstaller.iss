@@ -59,17 +59,22 @@ Name: "{app}\\config"; Permissions: users-modify
 [Icons]
 Name: "{autoprograms}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"; WorkingDir: "{app}"
 Name: "{autodesktop}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"; Tasks: desktopicon; WorkingDir: "{app}"
-Name: "{userstartup}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"; Tasks: autostart; WorkingDir: "{app}"; Parameters: "--minimized"
+; NOTE: Startup is now handled via Task Scheduler in the app itself (Settings > Start with Windows)
+; This avoids double-startup issues and ensures elevated privileges for hardware access
 
 [Run]
 ; Install PawnIO driver if bundled
 Filename: "{tmp}\\PawnIO_setup.exe"; Parameters: "/SILENT"; StatusMsg: "Installing PawnIO driver (Secure Boot compatible)..."; Flags: waituntilterminated; Tasks: installpawnio; Check: PawnIOInstallerExists
+; Create scheduled task for autostart if user selected it (runs with elevated privileges)
+Filename: "schtasks"; Parameters: "/create /tn ""OmenCore"" /tr ""\""{app}\\{#MyAppExeName}\"" --minimized"" /sc onlogon /rl highest /f"; Flags: runhidden; Tasks: autostart
 ; Launch OmenCore with elevation (shellexec verb=runas)
 Filename: "{app}\\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent shellexec runascurrentuser; Verb: runas
 
 [UninstallRun]
 ; Stop OmenCore if running
 Filename: "taskkill"; Parameters: "/F /IM OmenCore.exe"; Flags: runhidden; RunOnceId: "StopOmenCore"
+; Remove scheduled task for autostart
+Filename: "schtasks"; Parameters: "/delete /tn ""OmenCore"" /f"; Flags: runhidden; RunOnceId: "RemoveOmenCoreTask"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\\logs"

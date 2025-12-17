@@ -167,8 +167,18 @@
                             
                             <Slider Minimum="-200" Maximum="0" 
                                     TickFrequency="5" 
+                                    TickPlacement="BottomRight"
                                     Value="{Binding RequestedCoreOffset, Mode=TwoWay}"
                                     IsSnapToTickEnabled="True"/>
+                            
+                            <!-- Tick labels for key values -->
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="-200" FontSize="9" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Text="-150" FontSize="9" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Left" Margin="50,0,0,0"/>
+                                <TextBlock Text="-100" FontSize="9" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="-50" FontSize="9" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right" Margin="0,0,50,0"/>
+                                <TextBlock Text="0" FontSize="9" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
                             
                             <TextBlock Text="Recommended: -80 mV to -120 mV" 
                                        FontSize="11" 
@@ -196,6 +206,7 @@
                             
                             <Slider Minimum="-200" Maximum="0" 
                                     TickFrequency="5" 
+                                    TickPlacement="BottomRight"
                                     Value="{Binding RequestedCacheOffset, Mode=TwoWay}"
                                     IsSnapToTickEnabled="True"/>
                             
@@ -233,18 +244,20 @@
                                         Style="{StaticResource ModernButton}"
                                         Command="{Binding ApplyUndervoltPresetCommand}"
                                         CommandParameter="-60"
+                                        ToolTip="Safe starting point for most CPUs. Low risk of instability."
                                         HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
                                 
                                 <Button Content="Moderate (-100 mV)" 
                                         Style="{StaticResource ModernButton}"
                                         Command="{Binding ApplyUndervoltPresetCommand}"
                                         CommandParameter="-100"
+                                        ToolTip="Good balance of power savings. Test with stress tests before daily use."
                                         HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
                                 
                                 <Button Content="Aggressive (-140 mV)" 
                                         Style="{StaticResource ModernButton}"
-                                        Command="{Binding ApplyUndervoltPresetCommand}"
-                                        CommandParameter="-140"
+                                        Command="{Binding ApplyAggressiveUndervoltCommand}"
+                                        ToolTip="⚠️ High risk! May cause crashes or BSODs. Only for silicon lottery winners."
                                         HorizontalAlignment="Stretch"/>
                             </StackPanel>
                         </Expander>
@@ -292,6 +305,18 @@
                                     Value="{Binding RequestedTccOffset, Mode=TwoWay}"
                                     IsSnapToTickEnabled="True"
                                     IsDirectionReversed="True"/>
+                            
+                            <!-- Slider direction labels -->
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="← Higher Temps" 
+                                           FontSize="10" 
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           HorizontalAlignment="Left"/>
+                                <TextBlock Text="Lower Temps →" 
+                                           FontSize="10" 
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
                             
                             <TextBlock FontSize="11" 
                                        Foreground="{StaticResource TextSecondaryBrush}"

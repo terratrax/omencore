@@ -40,10 +40,12 @@ namespace OmenCore.Services
         public ThermalSensorProvider ThermalProvider => _thermalProvider;
         
         // Curve update timing (like OmenMon's 15-second interval)
-        private const int CurveUpdateIntervalMs = 15000; // 15 seconds between curve updates
+        private const int CurveUpdateIntervalMs = 10000; // 10 seconds between curve updates (reduced from 15)
+        private const int CurveForceRefreshMs = 60000;   // Force re-apply every 60 seconds even if unchanged
         private const int MonitorMinIntervalMs = 1000;   // 1 second minimum for UI updates
         private const int MonitorMaxIntervalMs = 5000;   // 5 seconds when temps stable
         private DateTime _lastCurveUpdate = DateTime.MinValue;
+        private DateTime _lastCurveForceRefresh = DateTime.MinValue;
         private int _lastAppliedFanPercent = -1;
         
         // Adaptive polling - reduce DPC latency by polling less when stable
@@ -93,6 +95,11 @@ namespace OmenCore.Services
         /// Whether thermal protection is currently overriding fan control.
         /// </summary>
         public bool IsThermalProtectionActive => _thermalProtectionActive;
+        
+        /// <summary>
+        /// Event raised when a preset is applied (for UI synchronization).
+        /// </summary>
+        public event EventHandler<string>? PresetApplied;
         
         /// <summary>
         /// Enable/disable thermal protection override.
@@ -198,6 +205,9 @@ namespace OmenCore.Services
                     _activePreset = preset;
                     _logging.Info($"Preset '{preset.Name}' using BIOS control (no curve defined)");
                 }
+                
+                // Raise event for UI synchronization (sidebar, tray, etc.)
+                PresetApplied?.Invoke(this, preset.Name);
             }
             else
             {
@@ -463,11 +473,16 @@ namespace OmenCore.Services
             if (!_curveEnabled || _activeCurve == null || !FanWritesAvailable)
                 return;
                 
-            // Only update curve every CurveUpdateIntervalMs (15 seconds like OmenMon)
+            // Only update curve every CurveUpdateIntervalMs
             var now = DateTime.Now;
             var timeSinceLastUpdate = (now - _lastCurveUpdate).TotalMilliseconds;
+            var timeSinceForceRefresh = (now - _lastCurveForceRefresh).TotalMilliseconds;
             
-            if (timeSinceLastUpdate < CurveUpdateIntervalMs)
+            // Check if we need to force a refresh (re-apply even if unchanged)
+            // This combats BIOS countdown timer that may reset fan control
+            bool forceRefresh = timeSinceForceRefresh >= CurveForceRefreshMs;
+            
+            if (timeSinceLastUpdate < CurveUpdateIntervalMs && !forceRefresh)
                 return;
                 
             lock (_curveLock)
@@ -523,8 +538,9 @@ namespace OmenCore.Services
                         }
                     }
                     
-                    // Only apply if fan percent changed (avoid unnecessary WMI calls)
-                    if (targetFanPercent != _lastAppliedFanPercent)
+                    // Apply if fan percent changed OR if we're forcing a refresh
+                    // Force refresh combats BIOS countdown timer that may have reset fan control
+                    if (targetFanPercent != _lastAppliedFanPercent || forceRefresh)
                     {
                         // Convert percentage to krpm (0-100% maps to 0-55 krpm)
                         byte fanLevel = (byte)(targetFanPercent * 55 / 100);
@@ -535,7 +551,16 @@ namespace OmenCore.Services
                             _lastAppliedFanPercent = targetFanPercent;
                             _lastHysteresisTemp = maxTemp;
                             _pendingFanPercent = -1;
-                            _logging.Info($"Curve applied: {targetFanPercent}% @ {maxTemp:F1}°C (level: {fanLevel})");
+                            
+                            if (forceRefresh)
+                            {
+                                _lastCurveForceRefresh = now;
+                                _logging.Info($"Curve force-refreshed: {targetFanPercent}% @ {maxTemp:F1}°C (level: {fanLevel})");
+                            }
+                            else
+                            {
+                                _logging.Info($"Curve applied: {targetFanPercent}% @ {maxTemp:F1}°C (level: {fanLevel})");
+                            }
                         }
                     }
                     
@@ -614,6 +639,17 @@ namespace OmenCore.Services
         {
             DisableCurve();
             Stop();
+            
+            // Restore fan control to BIOS on exit so fans don't stay stuck
+            try
+            {
+                _fanController.RestoreAutoControl();
+                _logging.Info("Fan control restored to BIOS on shutdown");
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Could not restore fan control on shutdown: {ex.Message}");
+            }
         }
     }
 }

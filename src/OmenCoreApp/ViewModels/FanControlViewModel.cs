@@ -134,6 +134,11 @@ namespace OmenCore.ViewModels
             get => _activeFanMode == "Custom";
             set { if (value) ActiveFanMode = "Custom"; }
         }
+        
+        /// <summary>
+        /// Whether a custom fan curve is currently being actively applied by FanService.
+        /// </summary>
+        public bool IsCurveActive => _fanService.IsCurveActive;
 
         public string CustomPresetName
         {
@@ -446,6 +451,16 @@ namespace OmenCore.ViewModels
             // Warn if low temperature has too high fan speed (noisy)
             if (sorted[0].TemperatureC < 50 && sorted[0].FanPercent > 60)
                 return $"Low temperature ({sorted[0].TemperatureC}°C) has high fan speed ({sorted[0].FanPercent}%). This may cause unnecessary noise.";
+            
+            // Warn about potentially inverted/non-monotonic curves (fan% decreases as temp increases)
+            for (int i = 0; i < sorted.Count - 1; i++)
+            {
+                if (sorted[i + 1].FanPercent < sorted[i].FanPercent - 10)
+                {
+                    // Log but don't block - user might have a valid reason
+                    _logging.Warn($"Fan curve has decreasing speed: {sorted[i].TemperatureC}°C={sorted[i].FanPercent}% → {sorted[i+1].TemperatureC}°C={sorted[i+1].FanPercent}%. Is this intentional?");
+                }
+            }
             
             return null; // Valid curve
         }

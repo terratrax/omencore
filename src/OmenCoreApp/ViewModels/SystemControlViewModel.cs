@@ -363,6 +363,7 @@ namespace OmenCore.ViewModels
         public ICommand CreateRestorePointCommand { get; }
         public ICommand RunCleanupCommand { get; }
         public ICommand ApplyUndervoltPresetCommand { get; }
+        public ICommand ApplyAggressiveUndervoltCommand { get; }
         public ICommand ApplyGpuPowerBoostCommand { get; }
 
         public bool CleanupInProgress
@@ -453,6 +454,7 @@ namespace OmenCore.ViewModels
             ApplyUndervoltCommand = new AsyncRelayCommand(_ => ApplyUndervoltAsync(), _ => !RespectExternalUndervolt || !UndervoltStatus.HasExternalController);
             ResetUndervoltCommand = new AsyncRelayCommand(async _ => await _undervoltService.ResetAsync());
             ApplyUndervoltPresetCommand = new AsyncRelayCommand(ApplyUndervoltPresetAsync);
+            ApplyAggressiveUndervoltCommand = new AsyncRelayCommand(_ => ApplyAggressiveUndervoltAsync());
             CleanupOmenHubCommand = new AsyncRelayCommand(_ => RunCleanupAsync(), _ => !CleanupInProgress);
             RunCleanupCommand = new AsyncRelayCommand(_ => RunCleanupAsync(), _ => !CleanupInProgress);
             CreateRestorePointCommand = new AsyncRelayCommand(_ => CreateRestorePointAsync());
@@ -545,19 +547,33 @@ namespace OmenCore.ViewModels
                     
                     // Restore saved TCC offset from config if different from current
                     var savedOffset = _configService.Config.LastTccOffset;
-                    if (savedOffset.HasValue && savedOffset.Value != currentOffset && savedOffset.Value > 0)
+                    _logging.Info($"TCC restore check: savedOffset={savedOffset}, currentOffset={currentOffset}");
+                    
+                    if (savedOffset.HasValue && savedOffset.Value > 0)
                     {
-                        // Schedule reapply with proper retry logic to ensure system is ready
-                        _ = Task.Run(async () =>
+                        if (savedOffset.Value != currentOffset)
                         {
-                            await ReapplySettingWithRetryAsync(
-                                "TCC Offset",
-                                () => ReapplySavedTccOffset(savedOffset.Value),
-                                maxRetries: 5,
-                                initialDelayMs: 2000,
-                                maxDelayMs: 6000
-                            );
-                        });
+                            _logging.Info($"TCC offset needs restoration: saved {savedOffset.Value}°C differs from current {currentOffset}°C");
+                            // Schedule reapply with proper retry logic to ensure system is ready
+                            _ = Task.Run(async () =>
+                            {
+                                await ReapplySettingWithRetryAsync(
+                                    "TCC Offset",
+                                    () => ReapplySavedTccOffset(savedOffset.Value),
+                                    maxRetries: 8,
+                                    initialDelayMs: 1500,
+                                    maxDelayMs: 8000
+                                );
+                            });
+                        }
+                        else
+                        {
+                            _logging.Info($"TCC offset already at saved value ({savedOffset.Value}°C), no restoration needed");
+                        }
+                    }
+                    else
+                    {
+                        _logging.Info("No saved TCC offset to restore (either null or 0)");
                     }
                 }
                 else
@@ -1024,6 +1040,25 @@ The HP WMI BIOS interface exists but GPU power commands return empty results. " 
                 ApplyPerformanceMode();
             }
         }
+        
+        /// <summary>
+        /// Select a performance mode by name without applying it.
+        /// Used for UI synchronization when mode is changed externally (e.g., power automation).
+        /// </summary>
+        public void SelectModeByNameNoApply(string modeName)
+        {
+            var mode = PerformanceModes.FirstOrDefault(m => 
+                m.Name.Equals(modeName, StringComparison.OrdinalIgnoreCase));
+            if (mode != null && _selectedPerformanceMode != mode)
+            {
+                _selectedPerformanceMode = mode;
+                OnPropertyChanged(nameof(SelectedPerformanceMode));
+                OnPropertyChanged(nameof(CurrentPerformanceModeName));
+                OnPropertyChanged(nameof(IsQuietMode));
+                OnPropertyChanged(nameof(IsBalancedMode));
+                OnPropertyChanged(nameof(IsPerformanceMode));
+            }
+        }
 
         private async Task ApplyUndervoltAsync()
         {
@@ -1045,6 +1080,42 @@ The HP WMI BIOS interface exists but GPU power commands return empty results. " 
                 RequestedCoreOffset = offset;
                 RequestedCacheOffset = offset;
                 await ApplyUndervoltAsync();
+            }
+        }
+        
+        /// <summary>
+        /// Apply aggressive undervolt (-140mV) with confirmation dialog.
+        /// High undervolt values can cause system instability, BSODs, or crashes.
+        /// </summary>
+        private async Task ApplyAggressiveUndervoltAsync()
+        {
+            var result = System.Windows.MessageBox.Show(
+                "⚠️ WARNING: Aggressive Undervolt\n\n" +
+                "You are about to apply a -140mV undervolt offset.\n\n" +
+                "This is an aggressive setting that may cause:\n" +
+                "• Blue screen crashes (BSOD)\n" +
+                "• Application crashes or freezes\n" +
+                "• System instability under load\n\n" +
+                "Only proceed if you understand the risks and are prepared to:\n" +
+                "• Reboot if your system becomes unstable\n" +
+                "• Test thoroughly with stress tests (Prime95, OCCT)\n\n" +
+                "The undervolt will not persist after reboot, so a crash will reset it.\n\n" +
+                "Continue with -140mV undervolt?",
+                "Aggressive Undervolt Warning",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning,
+                System.Windows.MessageBoxResult.No);
+            
+            if (result == System.Windows.MessageBoxResult.Yes)
+            {
+                _logging.Warn("User confirmed aggressive undervolt (-140mV)");
+                RequestedCoreOffset = -140;
+                RequestedCacheOffset = -140;
+                await ApplyUndervoltAsync();
+            }
+            else
+            {
+                _logging.Info("User cancelled aggressive undervolt");
             }
         }
 
