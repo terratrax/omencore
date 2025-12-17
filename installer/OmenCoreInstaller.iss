@@ -40,9 +40,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "startmenu"; Description: "Create Start Menu shortcut"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checked
-Name: "installpawnio"; Description: "Install PawnIO driver (Secure Boot compatible, recommended for advanced features)"; GroupDescription: "🔧 Hardware Drivers:"; Flags: checkedonce
-Name: "autostart"; Description: "Start OmenCore with Windows"; GroupDescription: "⚡ Startup Options:"; Flags: unchecked
+Name: "startmenu"; Description: "Create Start Menu shortcut"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "installpawnio"; Description: "Install PawnIO driver (Secure Boot compatible, recommended for advanced features)"; GroupDescription: "Hardware Drivers:"; Flags: unchecked
+Name: "autostart"; Description: "Start OmenCore with Windows"; GroupDescription: "Startup Options:"; Flags: unchecked
 
 [Files]
 ; Self-contained app with embedded .NET runtime - no separate .NET installation needed
