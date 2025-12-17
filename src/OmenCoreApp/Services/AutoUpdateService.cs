@@ -293,10 +293,12 @@ namespace OmenCore.Services
                 var buffer = new byte[8192];
                 var stopwatch = Stopwatch.StartNew();
                 
-                using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                using var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                // Download to file - use explicit scope to ensure file handle is released
+                {
+                    using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
                 
-                int bytesRead;
+                    int bytesRead;
                 while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
                 {
                     await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
@@ -321,6 +323,10 @@ namespace OmenCore.Services
                         DownloadProgressChanged?.Invoke(this, progress);
                     }
                 }
+                } // End of explicit scope - file handle released here
+                
+                // Small delay to ensure file handle is fully released by OS
+                await Task.Delay(100, cancellationToken);
                 
                 // Verify file hash (preferred for security)
                 if (string.IsNullOrWhiteSpace(versionInfo.Sha256Hash))
@@ -419,10 +425,31 @@ namespace OmenCore.Services
         
         private string ComputeSha256Hash(string filePath)
         {
-            using var sha256 = SHA256.Create();
-            using var stream = File.OpenRead(filePath);
-            var hash = sha256.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            // Retry logic in case file handle isn't fully released yet
+            const int maxRetries = 3;
+            const int retryDelayMs = 200;
+            
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    using var sha256 = SHA256.Create();
+                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    var hash = sha256.ComputeHash(stream);
+                    return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                }
+                catch (IOException) when (attempt < maxRetries)
+                {
+                    _logging.Warn($"File locked, retrying hash computation (attempt {attempt}/{maxRetries})...");
+                    Thread.Sleep(retryDelayMs * attempt);
+                }
+            }
+            
+            // Final attempt - let it throw if still locked
+            using var sha256Final = SHA256.Create();
+            using var streamFinal = File.OpenRead(filePath);
+            var hashFinal = sha256Final.ComputeHash(streamFinal);
+            return BitConverter.ToString(hashFinal).Replace("-", "").ToLowerInvariant();
         }
         
         public void Dispose()

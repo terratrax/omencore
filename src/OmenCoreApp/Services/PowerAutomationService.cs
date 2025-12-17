@@ -182,41 +182,65 @@ namespace OmenCore.Services
 
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
-            _logging.Info($"PowerModeChanged event received: Mode={e.Mode}");
-            
-            // Only respond to actual power line changes
-            if (e.Mode != PowerModes.StatusChange)
+            try
             {
-                _logging.Info($"Ignoring non-StatusChange event: {e.Mode}");
-                return;
-            }
+                _logging.Info($"PowerModeChanged event received: Mode={e.Mode}");
+                
+                // Only respond to actual power line changes
+                if (e.Mode != PowerModes.StatusChange)
+                {
+                    _logging.Info($"Ignoring non-StatusChange event: {e.Mode}");
+                    return;
+                }
 
-            var currentAcState = GetCurrentAcState();
-            _logging.Info($"Current AC state detected: {currentAcState} (was: {_lastKnownAcState})");
-            
-            // Only act if state actually changed
-            if (currentAcState == _lastKnownAcState)
-            {
-                _logging.Info("Power state unchanged, skipping profile application");
-                return;
-            }
+                var currentAcState = GetCurrentAcState();
+                _logging.Info($"Current AC state detected: {currentAcState} (was: {_lastKnownAcState})");
+                
+                // Only act if state actually changed
+                if (currentAcState == _lastKnownAcState)
+                {
+                    _logging.Info("Power state unchanged, skipping profile application");
+                    return;
+                }
 
-            _lastKnownAcState = currentAcState;
-            
-            _logging.Info($"Power state changed: {(currentAcState ? "AC Connected" : "On Battery")}");
-            
-            // Raise event for UI updates
-            PowerStateChanged?.Invoke(this, new PowerStateChangedEventArgs(currentAcState));
+                _lastKnownAcState = currentAcState;
+                
+                _logging.Info($"Power state changed: {(currentAcState ? "AC Connected" : "On Battery")}");
+                
+                // Raise event for UI updates - marshal to UI thread if needed
+                try
+                {
+                    if (System.Windows.Application.Current?.Dispatcher != null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            PowerStateChanged?.Invoke(this, new PowerStateChangedEventArgs(currentAcState));
+                        });
+                    }
+                    else
+                    {
+                        PowerStateChanged?.Invoke(this, new PowerStateChangedEventArgs(currentAcState));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logging.Warn($"Failed to raise PowerStateChanged event: {ex.Message}");
+                }
 
-            // Apply automation if enabled
-            if (_isEnabled)
-            {
-                _logging.Info("Power automation is enabled, applying profile...");
-                ApplyPowerProfile(currentAcState);
+                // Apply automation if enabled
+                if (_isEnabled)
+                {
+                    _logging.Info("Power automation is enabled, applying profile...");
+                    ApplyPowerProfile(currentAcState);
+                }
+                else
+                {
+                    _logging.Info("Power automation is disabled, skipping profile application");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _logging.Info("Power automation is disabled, skipping profile application");
+                _logging.Error($"Error handling power mode change: {ex.Message}", ex);
             }
         }
 
