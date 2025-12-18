@@ -11,7 +11,7 @@ OmenCore is a **complete replacement** for HP OMEN Gaming Hub - no OGH services 
 - ✅ **No Ads** - Clean, focused interface
 - ✅ **No Sign-In Required** - Full offline operation
 
-[![Version](https://img.shields.io/badge/version-1.5.0--beta2-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v1.5.0-beta2)
+[![Version](https://img.shields.io/badge/version-1.5.0--beta4-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v1.5.0-beta4)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Website](https://img.shields.io/badge/website-omencore.info-brightgreen.svg)](https://omencore.info)
