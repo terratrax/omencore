@@ -24,10 +24,12 @@ namespace OmenCore.Hardware
     {
         private const string PipeName = "OmenCore_HardwareWorker";
         private const string WorkerExeName = "OmenCore.HardwareWorker.exe";
-        private const int ConnectionTimeoutMs = 3000;
-        private const int RequestTimeoutMs = 1000;
+        private const int ConnectionTimeoutMs = 5000;  // Increased for slow boot
+        private const int RequestTimeoutMs = 2000;
         private const int MaxRestartAttempts = 5;
         private const int RestartCooldownMs = 5000;
+        private const int WorkerStartupDelayMs = 1500;  // Give worker more time to start pipe server
+        private const int MaxConnectionRetries = 3;
         
         private Process? _workerProcess;
         private NamedPipeClientStream? _pipeClient;
@@ -100,11 +102,24 @@ namespace OmenCore.Hardware
                 
                 _logger?.Invoke($"[Worker] Worker started with PID {_workerProcess.Id}");
                 
-                // Wait a bit for worker to initialize
-                await Task.Delay(500);
+                // Wait for worker to initialize pipe server (longer delay for boot scenarios)
+                await Task.Delay(WorkerStartupDelayMs);
                 
-                // Connect to worker
-                return await ConnectAsync();
+                // Connect to worker with retries
+                for (int retry = 0; retry < MaxConnectionRetries; retry++)
+                {
+                    if (await ConnectAsync())
+                        return true;
+                    
+                    if (retry < MaxConnectionRetries - 1)
+                    {
+                        _logger?.Invoke($"[Worker] Connection attempt {retry + 1} failed, retrying...");
+                        await Task.Delay(1000);
+                    }
+                }
+                
+                _logger?.Invoke("[Worker] All connection attempts failed");
+                return false;
             }
             catch (Exception ex)
             {

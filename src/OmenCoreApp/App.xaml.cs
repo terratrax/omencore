@@ -161,6 +161,9 @@ namespace OmenCore
                     new Uri("pack://application:,,,/Assets/OmenCore.ico")),
                 ToolTipText = "OmenCore - Gaming Laptop Control\n\nLeft-click: Open Dashboard\nMiddle-click: Quick Popup\nRight-click: Menu"
             };
+            
+            // Retry tray icon visibility after boot (Windows sometimes fails to show icons during login)
+            _ = EnsureTrayIconVisibleAsync();
 
             var configService = _serviceProvider?.GetService<ConfigurationService>();
             _trayIconService = new TrayIconService(_trayIcon, ShowMainWindow, () => Shutdown(), configService);
@@ -239,6 +242,51 @@ namespace OmenCore
                         }
                     });
                 };
+            }
+        }
+        
+        /// <summary>
+        /// Retry tray icon visibility after boot.
+        /// Windows sometimes fails to show tray icons created before Explorer is fully ready.
+        /// </summary>
+        private async Task EnsureTrayIconVisibleAsync()
+        {
+            // Wait a bit for Windows shell to be ready
+            await Task.Delay(3000);
+            
+            // Force icon visibility refresh by toggling visibility
+            try
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (_trayIcon != null)
+                    {
+                        // Toggle visibility to force Windows to re-register the icon
+                        var currentVisibility = _trayIcon.Visibility;
+                        _trayIcon.Visibility = System.Windows.Visibility.Collapsed;
+                        _trayIcon.Visibility = currentVisibility;
+                        
+                        // Also refresh the icon source to force re-render
+                        var icon = _trayIcon.IconSource;
+                        _trayIcon.IconSource = null;
+                        _trayIcon.IconSource = icon;
+                    }
+                });
+                
+                // Additional retry after longer delay for slow boot scenarios
+                await Task.Delay(5000);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (_trayIcon != null)
+                    {
+                        _trayIcon.Visibility = System.Windows.Visibility.Collapsed;
+                        _trayIcon.Visibility = System.Windows.Visibility.Visible;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Logging.Warn($"Tray icon refresh failed: {ex.Message}");
             }
         }
 

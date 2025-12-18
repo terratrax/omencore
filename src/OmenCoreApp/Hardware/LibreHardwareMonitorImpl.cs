@@ -30,6 +30,7 @@ namespace OmenCore.Hardware
         // Out-of-process worker for crash isolation
         private HardwareWorkerClient? _workerClient;
         private bool _useWorker = false;
+        private bool _workerInitializing = false; // Track async initialization state
 
         // Cache for performance
         private double _cachedCpuTemp = 0;
@@ -115,19 +116,27 @@ namespace OmenCore.Hardware
         
         private async void InitializeWorker()
         {
-            _workerClient = new HardwareWorkerClient(_logger);
-            var started = await _workerClient.StartAsync();
-            
-            if (started)
+            _workerInitializing = true;
+            try
             {
-                _logger?.Invoke("[Monitor] Using out-of-process hardware worker (crash-isolated)");
-                _initialized = true;
+                _workerClient = new HardwareWorkerClient(_logger);
+                var started = await _workerClient.StartAsync();
+                
+                if (started)
+                {
+                    _logger?.Invoke("[Monitor] Using out-of-process hardware worker (crash-isolated)");
+                    _initialized = true;
+                }
+                else
+                {
+                    _logger?.Invoke("[Monitor] Worker failed to start, falling back to in-process");
+                    _useWorker = false;
+                    InitializeComputer();
+                }
             }
-            else
+            finally
             {
-                _logger?.Invoke("[Monitor] Worker failed to start, falling back to in-process");
-                _useWorker = false;
-                InitializeComputer();
+                _workerInitializing = false;
             }
         }
         
@@ -189,8 +198,18 @@ namespace OmenCore.Hardware
         {
             token.ThrowIfCancellationRequested();
 
-            // Use worker if enabled
-            if (_useWorker && _workerClient != null)
+            // Wait for worker initialization to complete (prevent race condition)
+            if (_workerInitializing)
+            {
+                // Worker is still starting up - wait a bit
+                for (int i = 0; i < 10 && _workerInitializing; i++)
+                {
+                    await Task.Delay(200, token);
+                }
+            }
+
+            // Use worker if enabled and initialized
+            if (_useWorker && _workerClient != null && _initialized)
             {
                 return await ReadSampleFromWorkerAsync(token);
             }
