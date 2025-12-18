@@ -604,6 +604,9 @@ namespace OmenCore.ViewModels
                     OnPropertyChanged();
                     SaveSettings();
                     _logging.Info($"Tray temperature display {(value ? "enabled" : "disabled")}");
+                    
+                    // Immediately refresh tray icon to reflect the change
+                    App.TrayIcon?.RefreshTrayIcon();
                 }
             }
         }

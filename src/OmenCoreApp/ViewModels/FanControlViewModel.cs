@@ -383,7 +383,28 @@ namespace OmenCore.ViewModels
                 "Quiet" or "Silent" => "Silent",
                 _ => preset.Mode == FanMode.Manual ? "Custom" : "Auto"
             };
+            
+            // Save last applied preset name to config for persistence across restarts
+            SaveLastPresetToConfig(preset.Name);
             // FanService logs success/failure, no need to duplicate
+        }
+        
+        /// <summary>
+        /// Save the last applied preset name to config for restoration on next startup.
+        /// </summary>
+        private void SaveLastPresetToConfig(string presetName)
+        {
+            try
+            {
+                var config = _configService.Load();
+                config.LastFanPresetName = presetName;
+                _configService.Save(config);
+                _logging.Info($"💾 Last fan preset saved to config: {presetName}");
+            }
+            catch (Exception ex)
+            {
+                _logging.Warn($"Failed to save last fan preset to config: {ex.Message}");
+            }
         }
 
         private void ApplyCustomCurve()

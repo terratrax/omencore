@@ -25,6 +25,11 @@ namespace OmenCore
 
         public static LoggingService Logging { get; } = new();
         public static ConfigurationService Configuration { get; } = new();
+        
+        /// <summary>
+        /// Tray icon service instance for external access (e.g., from SettingsViewModel).
+        /// </summary>
+        public static TrayIconService? TrayIcon { get; private set; }
 
         public App()
         {
@@ -167,6 +172,7 @@ namespace OmenCore
 
             var configService = _serviceProvider?.GetService<ConfigurationService>();
             _trayIconService = new TrayIconService(_trayIcon, ShowMainWindow, () => Shutdown(), configService);
+            TrayIcon = _trayIconService; // Expose for static access (e.g., SettingsViewModel)
             _trayIcon.TrayLeftMouseUp += (s, e) => ShowMainWindow();
             _trayIcon.TrayMiddleMouseUp += (s, e) => _trayIconService?.ShowQuickPopup();
 

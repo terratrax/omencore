@@ -40,6 +40,17 @@ namespace OmenCore.Utils
         public event Action<string>? FanModeChangeRequested;
         public event Action<string>? PerformanceModeChangeRequested;
         public event Action<string>? QuickProfileChangeRequested;
+        
+        /// <summary>
+        /// Forces immediate refresh of the tray icon (e.g., when temp display setting changes).
+        /// </summary>
+        public void RefreshTrayIcon()
+        {
+            Application.Current?.Dispatcher?.BeginInvoke(() =>
+            {
+                UpdateTrayDisplay(null, EventArgs.Empty);
+            });
+        }
 
         public TrayIconService(TaskbarIcon trayIcon, Action showMainWindow, Action shutdownApp, ConfigurationService? configService = null)
         {
@@ -751,27 +762,18 @@ namespace OmenCore.Utils
 
         private Style CreateDarkMenuItemStyle()
         {
-            var style = new Style(typeof(MenuItem));
-            
-            // Set dark background for the submenu popup
             var darkBg = new SolidColorBrush(Color.FromRgb(21, 25, 43));
             var hoverBg = new SolidColorBrush(Color.FromRgb(47, 52, 72));
             var borderBrush = new SolidColorBrush(Color.FromRgb(47, 52, 72));
             
-            style.Setters.Add(new Setter(MenuItem.BackgroundProperty, darkBg));
-            style.Setters.Add(new Setter(MenuItem.ForegroundProperty, Brushes.White));
-            style.Setters.Add(new Setter(MenuItem.BorderBrushProperty, borderBrush));
+            // Gradient background for popup
+            var popupBg = new LinearGradientBrush(
+                Color.FromRgb(18, 20, 35),
+                Color.FromRgb(25, 28, 48),
+                new Point(0, 0),
+                new Point(0, 1));
             
-            // Create trigger for hover state
-            var hoverTrigger = new Trigger
-            {
-                Property = MenuItem.IsHighlightedProperty,
-                Value = true
-            };
-            hoverTrigger.Setters.Add(new Setter(MenuItem.BackgroundProperty, hoverBg));
-            style.Triggers.Add(hoverTrigger);
-            
-            return style;
+            return CreateSubmenuItemStyle(darkBg, hoverBg, popupBg, borderBrush);
         }
         
         private static Style CreateDarkMenuItemStyleWithNoIconColumn(Brush darkBg, Brush hoverBg)
@@ -802,13 +804,13 @@ namespace OmenCore.Utils
         
         /// <summary>
         /// Creates a custom MenuItem style for dark theme appearance.
-        /// Uses simple property setters instead of complex ControlTemplate to ensure stability.
+        /// Uses a complete ControlTemplate to eliminate Windows default styling artifacts (white hover, icon gutter).
         /// </summary>
         private static Style CreateCustomMenuItemStyle(Brush darkBg, Brush hoverBg, Brush popupBg)
         {
             var style = new Style(typeof(MenuItem));
             
-            // Simple property-based styling (no ControlTemplate override)
+            // Base properties
             style.Setters.Add(new Setter(MenuItem.ForegroundProperty, Brushes.White));
             style.Setters.Add(new Setter(MenuItem.BackgroundProperty, Brushes.Transparent));
             style.Setters.Add(new Setter(MenuItem.BorderThicknessProperty, new Thickness(0)));
@@ -817,20 +819,127 @@ namespace OmenCore.Utils
             style.Setters.Add(new Setter(MenuItem.FontFamilyProperty, new FontFamily("Segoe UI")));
             style.Setters.Add(new Setter(MenuItem.FontSizeProperty, 12.0));
             
-            // Hover trigger using simple styling
+            // Create ControlTemplate to fully override default MenuItem visuals
+            var template = new ControlTemplate(typeof(MenuItem));
+            
+            // Root border - this replaces the entire default template
+            var rootBorder = new FrameworkElementFactory(typeof(Border), "Border");
+            rootBorder.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            rootBorder.SetValue(Border.BorderThicknessProperty, new Thickness(0));
+            rootBorder.SetValue(Border.PaddingProperty, new Thickness(8, 6, 8, 6));
+            rootBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+            rootBorder.SetValue(Border.MarginProperty, new Thickness(2, 1, 2, 1));
+            
+            // Content presenter for the Header
+            var contentPresenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            contentPresenter.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+            contentPresenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
+            contentPresenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+            
+            rootBorder.AppendChild(contentPresenter);
+            template.VisualTree = rootBorder;
+            
+            // Triggers for hover state
             var hoverTrigger = new Trigger { Property = MenuItem.IsHighlightedProperty, Value = true };
-            hoverTrigger.Setters.Add(new Setter(MenuItem.BackgroundProperty, hoverBg));
-            style.Triggers.Add(hoverTrigger);
+            hoverTrigger.Setters.Add(new Setter(Border.BackgroundProperty, hoverBg, "Border"));
+            template.Triggers.Add(hoverTrigger);
             
-            // Submenu open trigger
-            var submenuTrigger = new Trigger { Property = MenuItem.IsSubmenuOpenProperty, Value = true };
-            submenuTrigger.Setters.Add(new Setter(MenuItem.BackgroundProperty, hoverBg));
-            style.Triggers.Add(submenuTrigger);
+            // Trigger for pressed state
+            var pressedTrigger = new Trigger { Property = MenuItem.IsPressedProperty, Value = true };
+            pressedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromRgb(55, 60, 85)), "Border"));
+            template.Triggers.Add(pressedTrigger);
             
-            // Disabled trigger
+            // Trigger for disabled state
             var disabledTrigger = new Trigger { Property = UIElement.IsEnabledProperty, Value = false };
             disabledTrigger.Setters.Add(new Setter(UIElement.OpacityProperty, 0.56));
-            style.Triggers.Add(disabledTrigger);
+            template.Triggers.Add(disabledTrigger);
+            
+            style.Setters.Add(new Setter(Control.TemplateProperty, template));
+            
+            return style;
+        }
+        
+        /// <summary>
+        /// Creates a custom MenuItem style for items with submenus.
+        /// Includes submenu popup styling.
+        /// </summary>
+        private Style CreateSubmenuItemStyle(Brush darkBg, Brush hoverBg, Brush popupBg, Brush borderBrush)
+        {
+            var style = new Style(typeof(MenuItem));
+            
+            // Base properties
+            style.Setters.Add(new Setter(MenuItem.ForegroundProperty, Brushes.White));
+            style.Setters.Add(new Setter(MenuItem.BackgroundProperty, Brushes.Transparent));
+            style.Setters.Add(new Setter(MenuItem.BorderThicknessProperty, new Thickness(0)));
+            style.Setters.Add(new Setter(MenuItem.PaddingProperty, new Thickness(8, 6, 8, 6)));
+            style.Setters.Add(new Setter(MenuItem.SnapsToDevicePixelsProperty, true));
+            style.Setters.Add(new Setter(MenuItem.FontFamilyProperty, new FontFamily("Segoe UI")));
+            style.Setters.Add(new Setter(MenuItem.FontSizeProperty, 12.0));
+            
+            // Create ControlTemplate for submenu parent items
+            var template = new ControlTemplate(typeof(MenuItem));
+            
+            var grid = new FrameworkElementFactory(typeof(Grid));
+            
+            // Root border
+            var rootBorder = new FrameworkElementFactory(typeof(Border), "Border");
+            rootBorder.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            rootBorder.SetValue(Border.BorderThicknessProperty, new Thickness(0));
+            rootBorder.SetValue(Border.PaddingProperty, new Thickness(8, 6, 8, 6));
+            rootBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+            rootBorder.SetValue(Border.MarginProperty, new Thickness(2, 1, 2, 1));
+            
+            var contentPresenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            contentPresenter.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+            contentPresenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
+            contentPresenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+            
+            rootBorder.AppendChild(contentPresenter);
+            grid.AppendChild(rootBorder);
+            
+            // Popup for submenu
+            var popup = new FrameworkElementFactory(typeof(System.Windows.Controls.Primitives.Popup), "PART_Popup");
+            popup.SetValue(System.Windows.Controls.Primitives.Popup.AllowsTransparencyProperty, true);
+            popup.SetValue(System.Windows.Controls.Primitives.Popup.PlacementProperty, System.Windows.Controls.Primitives.PlacementMode.Right);
+            popup.SetValue(System.Windows.Controls.Primitives.Popup.HorizontalOffsetProperty, -4.0);
+            popup.SetValue(System.Windows.Controls.Primitives.Popup.IsOpenProperty, new TemplateBindingExtension(MenuItem.IsSubmenuOpenProperty));
+            popup.SetValue(System.Windows.Controls.Primitives.Popup.PopupAnimationProperty, System.Windows.Controls.Primitives.PopupAnimation.Fade);
+            
+            // Popup content border
+            var popupBorder = new FrameworkElementFactory(typeof(Border));
+            popupBorder.SetValue(Border.BackgroundProperty, popupBg);
+            popupBorder.SetValue(Border.BorderBrushProperty, borderBrush);
+            popupBorder.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+            popupBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+            popupBorder.SetValue(Border.PaddingProperty, new Thickness(2));
+            popupBorder.SetValue(Border.MarginProperty, new Thickness(0, 0, 8, 8)); // Shadow space
+            popupBorder.SetValue(Border.EffectProperty, new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black,
+                BlurRadius = 12,
+                ShadowDepth = 4,
+                Opacity = 0.4
+            });
+            
+            // ItemsPresenter for submenu items
+            var itemsPresenter = new FrameworkElementFactory(typeof(ItemsPresenter));
+            itemsPresenter.SetValue(FrameworkElement.MarginProperty, new Thickness(0));
+            popupBorder.AppendChild(itemsPresenter);
+            popup.AppendChild(popupBorder);
+            grid.AppendChild(popup);
+            
+            template.VisualTree = grid;
+            
+            // Triggers
+            var hoverTrigger = new Trigger { Property = MenuItem.IsHighlightedProperty, Value = true };
+            hoverTrigger.Setters.Add(new Setter(Border.BackgroundProperty, hoverBg, "Border"));
+            template.Triggers.Add(hoverTrigger);
+            
+            var submenuOpenTrigger = new Trigger { Property = MenuItem.IsSubmenuOpenProperty, Value = true };
+            submenuOpenTrigger.Setters.Add(new Setter(Border.BackgroundProperty, hoverBg, "Border"));
+            template.Triggers.Add(submenuOpenTrigger);
+            
+            style.Setters.Add(new Setter(Control.TemplateProperty, template));
             
             return style;
         }

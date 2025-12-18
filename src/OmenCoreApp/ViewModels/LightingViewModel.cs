@@ -42,6 +42,7 @@ namespace OmenCore.ViewModels
         private string _zone3ColorHex = "#9B30FF"; // Purple
         private string _zone4ColorHex = "#00FFFF"; // Cyan
         private KeyboardPreset? _selectedKeyboardPreset;
+        private bool _colorsLoadedFromConfig; // Track if colors were loaded from saved config
 
         public ReadOnlyObservableCollection<CorsairDevice> CorsairDevices => _corsairService.Devices;
         public ReadOnlyObservableCollection<LogitechDevice> LogitechDevices => _logitechService.Devices;
@@ -459,7 +460,13 @@ namespace OmenCore.ViewModels
             KeyboardPresets.Add(new KeyboardPreset { Name = "Rainbow", Zone1 = "#FF0000", Zone2 = "#00FF00", Zone3 = "#0000FF", Zone4 = "#FFFF00" });
             KeyboardPresets.Add(new KeyboardPreset { Name = "Purple Haze", Zone1 = "#9400D3", Zone2 = "#8B008B", Zone3 = "#9932CC", Zone4 = "#9400D3" });
             KeyboardPresets.Add(new KeyboardPreset { Name = "White", Zone1 = "#FFFFFF", Zone2 = "#FFFFFF", Zone3 = "#FFFFFF", Zone4 = "#FFFFFF" });
-            SelectedKeyboardPreset = KeyboardPresets.FirstOrDefault();
+            
+            // Only select default preset if we didn't load colors from config
+            // (selecting a preset overwrites the colors, which would discard saved colors)
+            if (!_colorsLoadedFromConfig)
+            {
+                SelectedKeyboardPreset = KeyboardPresets.FirstOrDefault();
+            }
             
             // Initialize default DPI stages for mouse configuration
             CorsairDpiStages.Add(new CorsairDpiStage { Name = "Stage 1", Dpi = 800, IsDefault = true });
@@ -732,10 +739,18 @@ namespace OmenCore.ViewModels
                 var config = _configService?.Config?.KeyboardLighting;
                 if (config == null) return;
                 
+                // Check if any colors are saved (not null/default)
+                bool hasCustomColors = config.Zone1Color != null || config.Zone2Color != null || 
+                                       config.Zone3Color != null || config.Zone4Color != null;
+                
                 _zone1ColorHex = config.Zone1Color ?? "#E6002E";
                 _zone2ColorHex = config.Zone2Color ?? "#E6002E";
                 _zone3ColorHex = config.Zone3Color ?? "#E6002E";
                 _zone4ColorHex = config.Zone4Color ?? "#E6002E";
+                
+                // Mark that we loaded colors from config - this prevents the default preset from
+                // overwriting our saved colors during initialization
+                _colorsLoadedFromConfig = hasCustomColors;
                 
                 _logging.Info($"Loaded keyboard colors from config: Z1={_zone1ColorHex}, Z2={_zone2ColorHex}, Z3={_zone3ColorHex}, Z4={_zone4ColorHex}");
             }
