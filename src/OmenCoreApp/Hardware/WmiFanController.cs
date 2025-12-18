@@ -165,8 +165,9 @@ namespace OmenCore.Hardware
                         StartCountdownExtension();
                     }
                     
-                    // Apply GPU power settings if needed
-                    ApplyGpuPowerFromPreset(preset);
+                    // NOTE: GPU Power Boost is now controlled independently via System tab
+                    // We no longer override the user's GPU power setting when applying fan presets
+                    // This fixes the bug where Maximum TGP was being reset to Medium
                     
                     _logging?.Info($"✓ Applied preset: {preset.Name} (Mode: {mode})");
                     return true;
@@ -614,23 +615,9 @@ namespace OmenCore.Hardware
             return HpWmiBios.FanMode.Default;
         }
 
-        private void ApplyGpuPowerFromPreset(FanPreset preset)
-        {
-            var nameLower = preset.Name.ToLowerInvariant();
-            
-            if (nameLower.Contains("performance") || nameLower.Contains("turbo") || nameLower.Contains("gaming"))
-            {
-                _wmiBios.SetGpuPower(HpWmiBios.GpuPowerLevel.Maximum);
-            }
-            else if (nameLower.Contains("quiet") || nameLower.Contains("silent") || nameLower.Contains("battery"))
-            {
-                _wmiBios.SetGpuPower(HpWmiBios.GpuPowerLevel.Minimum);
-            }
-            else
-            {
-                _wmiBios.SetGpuPower(HpWmiBios.GpuPowerLevel.Medium);
-            }
-        }
+        // NOTE: ApplyGpuPowerFromPreset() was removed in v1.5.0-beta3
+        // GPU Power Boost is now controlled independently via the System tab
+        // Fan presets no longer override the user's GPU power setting
 
         private int EstimateDutyFromRpm(int rpm)
         {

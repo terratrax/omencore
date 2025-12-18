@@ -187,9 +187,12 @@ See [CHANGELOG_v1.2.0.md](docs/CHANGELOG_v1.2.0.md) and [CHANGELOG_v1.2.1.md](do
 
 ### 🖱️ **Peripheral Integration**
 - **Corsair iCUE devices** - lighting presets, DPI stages, macro profiles
-  - Hardware detection ready, SDK stub implementation (awaiting iCUE SDK integration)
+  - Direct HID access (no iCUE required) - Dark Core RGB PRO, HS70 PRO, Scimitar, M65, K70, etc.
 - **Logitech G HUB devices** - static color control, DPI readout, battery status
   - Hardware detection ready, SDK stub implementation
+- **Razer Chroma devices** - preliminary support (v1.5+)
+  - Detects Razer Synapse, basic color control UI
+  - Full Chroma SDK integration planned for v1.6
 - **Device discovery** via USB HID enumeration with connection status
 
 ### 📊 **Hardware Monitoring**

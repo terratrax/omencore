@@ -49,6 +49,7 @@ namespace OmenCore.Services.Corsair
             { 0x1B4B, ("Dark Core RGB PRO", CorsairDeviceType.Mouse, null) },
             { 0x1B4C, ("Dark Core RGB PRO SE", CorsairDeviceType.Mouse, null) },
             { 0x1B80, ("Dark Core RGB PRO Wireless", CorsairDeviceType.Mouse, null) }, // Wireless mouse when connected
+            { 0x1BF0, ("Dark Core RGB PRO", CorsairDeviceType.Mouse, null) }, // Alternate PID seen on some systems (was incorrectly Scimitar)
             { 0x1B34, ("Ironclaw RGB", CorsairDeviceType.Mouse, null) },
             { 0x1B3C, ("Nightsword RGB", CorsairDeviceType.Mouse, null) },
             { 0x1B1E, ("M65 RGB Elite", CorsairDeviceType.Mouse, null) },
@@ -58,7 +59,7 @@ namespace OmenCore.Services.Corsair
             { 0x1B75, ("Sabre RGB PRO", CorsairDeviceType.Mouse, null) },
             { 0x1B66, ("Katar PRO", CorsairDeviceType.Mouse, null) },
             { 0x1B6F, ("Katar PRO XT", CorsairDeviceType.Mouse, null) },
-            { 0x1BF0, ("Scimitar RGB Elite", CorsairDeviceType.Mouse, null) },
+            // Note: 0x1BF0 was listed as Scimitar RGB Elite but is actually Dark Core RGB PRO on some systems - moved to Dark Core section
             { 0x1B3B, ("Scimitar PRO RGB", CorsairDeviceType.Mouse, null) },
             { 0x1B8B, ("Scimitar Elite Wireless", CorsairDeviceType.Mouse, null) },
             { 0x1B7A, ("Sabre RGB PRO Champion", CorsairDeviceType.Mouse, null) },

@@ -256,6 +256,128 @@ Save/load overclocking configurations per-game or per-use-case.
 
 ---
 
+## 🎮 Peripheral RGB Support
+
+### 12. Full Razer Chroma SDK Integration
+
+**Target:** v1.6.0  
+**Effort:** Medium  
+**Impact:** High
+
+Complete integration with Razer Chroma SDK for full device control (beyond v1.5's preliminary support).
+
+**Features:**
+- Full device enumeration via Chroma SDK
+- Per-key RGB control for keyboards
+- Mouse lighting zones
+- Headset lighting
+- Mousepad RGB control
+- Chroma effects (Wave, Spectrum, Breathing, Reactive)
+- Profile sync with OmenCore presets
+
+**Implementation:**
+```csharp
+// Native Razer SDK integration
+[DllImport("RzChromaSDK64.dll")]
+public static extern RzResult Init();
+
+// Device enumeration
+public async Task<List<RazerDevice>> EnumerateDevicesAsync();
+public async Task ApplyEffect(Guid deviceId, ChromaEffect effect);
+```
+
+---
+
+### 13. Enhanced Corsair iCUE SDK Integration
+
+**Target:** v1.6.0  
+**Effort:** Medium  
+**Impact:** High
+
+Upgrade from current HID-direct approach to full iCUE SDK when available.
+
+**Current Limitations (v1.5):**
+- Direct HID only - basic lighting
+- PID database requires manual updates
+- No DPI control
+- No macro support
+
+**v1.6 Goals:**
+- Integrate official Corsair iCUE SDK
+- Full lighting effect support
+- DPI profile control for mice
+- Macro recording/playback
+- Battery status for wireless devices
+- Device firmware updates
+
+**Hybrid Approach:**
+- Use iCUE SDK when iCUE is running
+- Fallback to direct HID when iCUE not installed
+- Best of both worlds
+
+---
+
+### 14. Greater Logitech G HUB Integration
+
+**Target:** v1.6.0  
+**Effort:** Medium  
+**Impact:** Medium
+
+Expand Logitech support beyond current basic implementation.
+
+**Current Limitations (v1.5):**
+- Requires G HUB running
+- Limited to basic SDK features
+- No direct HID fallback
+
+**v1.6 Goals:**
+- Direct HID support (like Corsair) - no G HUB required
+- Per-key RGB for keyboards
+- Mouse DPI control
+- LightSpeed wireless device support
+- PowerPlay charging status
+- G HUB SDK as optional enhancement layer
+
+**Device Support Priority:**
+- G Pro X Superlight
+- G502 X series
+- G915/G915 X keyboards
+- G733/G PRO X headsets
+
+---
+
+### 15. Unified RGB Control
+
+**Target:** v1.6.0  
+**Effort:** High  
+**Impact:** Very High
+
+Single interface to control all RGB devices regardless of brand.
+
+**Features:**
+- "Sync All" button - applies same color/effect to all devices
+- Brand-agnostic presets (Gaming, Productivity, Night Mode)
+- Per-zone color mapping across devices
+- Audio-reactive lighting (microphone input)
+- Game integration (health bars, ammo, etc.)
+
+**UI Mockup:**
+```
+┌─────────────────────────────────────────────────────────┐
+│  RGB Sync                                               │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │ [🔗 Sync All]  [Preset: Gaming ▼]  [Color: 🔴]  │   │
+│  ├─────────────────────────────────────────────────┤   │
+│  │ HP OMEN Keyboard    ✓ Synced                    │   │
+│  │ Corsair M65         ✓ Synced                    │   │
+│  │ Razer BlackWidow    ✓ Synced                    │   │
+│  │ Logitech G502       ✓ Synced                    │   │
+│  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🎮 Game Integration
 
 ### 10. Per-Game Profiles

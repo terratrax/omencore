@@ -18,7 +18,7 @@
             <TextBlock Text="RGB Lighting &amp; Peripherals" 
                        FontSize="28" FontWeight="Bold" 
                        Foreground="{StaticResource TextPrimaryBrush}"/>
-            <TextBlock Text="Control keyboard RGB, Corsair peripherals, and Logitech devices" 
+            <TextBlock Text="Control keyboard RGB, Corsair, Logitech, and Razer peripherals" 
                        FontSize="12" 
                        Foreground="{StaticResource TextSecondaryBrush}"
                        Opacity="0.9"
@@ -343,6 +343,176 @@
                                     Padding="16,8" 
                                     VerticalAlignment="Bottom"/>
                         </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Razer Devices Section (Preliminary Support) -->
+                <Border Style="{StaticResource SurfaceCard}" Padding="24" Margin="0,0,0,16">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Razer Devices" FontSize="20" FontWeight="SemiBold" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Preliminary support - requires Razer Synapse" 
+                                           FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                            
+                            <Border Grid.Column="1" Background="#44FF44" CornerRadius="4" 
+                                    Padding="8,4" VerticalAlignment="Center"
+                                    Visibility="{Binding IsRazerAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="SYNAPSE DETECTED" FontSize="10" FontWeight="Bold" 
+                                           Foreground="Black"/>
+                            </Border>
+                        </Grid>
+                        
+                        <!-- Device Discovery -->
+                        <Grid Margin="0,16,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0" 
+                                       Text="{Binding RazerDeviceStatusText}" 
+                                       FontSize="14" 
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            
+                            <Button Grid.Column="1" 
+                                    Content="Discover Devices" 
+                                    Style="{StaticResource ModernButton}"
+                                    Command="{Binding DiscoverRazerDevicesCommand}"
+                                    Padding="16,8"/>
+                        </Grid>
+
+                        <!-- Razer Device List -->
+                        <ItemsControl ItemsSource="{Binding RazerDevices}" Margin="0,0,0,16">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource SurfaceDarkBrush}" 
+                                            CornerRadius="8" Padding="16" Margin="0,0,0,8"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Razer Icon -->
+                                            <Border Grid.Column="0" Width="40" Height="40" 
+                                                    Background="#44FF44" CornerRadius="20" Margin="0,0,12,0">
+                                                <TextBlock Text="R" FontSize="20" FontWeight="Bold"
+                                                           Foreground="Black"
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Device Info -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" 
+                                                           FontSize="14" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                <TextBlock FontSize="12" 
+                                                           Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <Run Text="{Binding DeviceType, Mode=OneWay}"/>
+                                                    <Run Text=" • "/>
+                                                    <Run Text="{Binding Status, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Razer Static Color -->
+                        <TextBlock Text="Lighting Control" FontSize="16" FontWeight="SemiBold" 
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Color:" 
+                                       FontSize="14" 
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            
+                            <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                <TextBlock Text="Red" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding RazerRedValue, UpdateSourceTrigger=PropertyChanged}" 
+                                         FontSize="14"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                                <TextBlock Text="Green" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding RazerGreenValue, UpdateSourceTrigger=PropertyChanged}" 
+                                         FontSize="14"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="3" Margin="0,0,8,0">
+                                <TextBlock Text="Blue" FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" 
+                                           Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding RazerBlueValue, UpdateSourceTrigger=PropertyChanged}" 
+                                         FontSize="14"/>
+                            </StackPanel>
+                            
+                            <Button Grid.Column="5" 
+                                    Content="Apply Static" 
+                                    Style="{StaticResource ModernButton}"
+                                    Command="{Binding ApplyRazerColorCommand}"
+                                    Padding="16,8" 
+                                    VerticalAlignment="Bottom"/>
+                        </Grid>
+                        
+                        <!-- Razer Effects -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button Grid.Column="0" 
+                                    Content="Breathing" 
+                                    Style="{StaticResource ModernButton}"
+                                    Command="{Binding ApplyRazerBreathingCommand}"
+                                    Padding="16,8" 
+                                    Margin="0,0,8,0"/>
+                            
+                            <Button Grid.Column="1" 
+                                    Content="Spectrum Cycle" 
+                                    Style="{StaticResource ModernButton}"
+                                    Command="{Binding ApplyRazerSpectrumCommand}"
+                                    Padding="16,8"/>
+                        </Grid>
+                        
+                        <!-- Note about preliminary support -->
+                        <Border Background="{StaticResource SurfaceDarkBrush}" CornerRadius="4" 
+                                Padding="12" Margin="0,16,0,0">
+                            <TextBlock Text="Note: Full Razer Chroma SDK integration is coming soon. Currently showing placeholder functionality." 
+                                       FontSize="12" 
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+                        </Border>
                     </StackPanel>
                 </Border>
 

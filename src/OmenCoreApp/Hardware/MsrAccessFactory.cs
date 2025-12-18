@@ -47,7 +47,9 @@ namespace OmenCore.Hardware
             // NOTE: This is deprecated and will be removed in a future version
             try
             {
+#pragma warning disable CS0618 // WinRing0 is obsolete but kept as fallback
                 var winRing0 = new WinRing0MsrAccess();
+#pragma warning restore CS0618
                 if (winRing0.IsAvailable)
                 {
                     ActiveBackend = MsrBackend.WinRing0;
@@ -85,7 +87,9 @@ namespace OmenCore.Hardware
             // Quick check for WinRing0
             try
             {
+#pragma warning disable CS0618 // WinRing0 is obsolete but kept as fallback
                 using var winRing0 = new WinRing0MsrAccess();
+#pragma warning restore CS0618
                 if (winRing0.IsAvailable) return true;
             }
             catch { }

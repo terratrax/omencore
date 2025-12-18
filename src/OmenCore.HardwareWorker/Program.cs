@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
 using LibreHardwareMonitor.Hardware;
@@ -13,6 +14,7 @@ namespace OmenCore.HardwareWorker;
 /// If this process crashes due to driver issues, the main app continues running
 /// and can restart this worker automatically.
 /// </summary>
+[SupportedOSPlatform("windows")]
 class Program
 {
     private const string PipeName = "OmenCore_HardwareWorker";
@@ -80,6 +82,45 @@ class Program
         
         _computer.Open();
         Console.WriteLine("LibreHardwareMonitor initialized.");
+        
+        // Log detected GPUs for diagnostics
+        LogDetectedGpus();
+    }
+    
+    private static void LogDetectedGpus()
+    {
+        if (_computer?.Hardware == null) return;
+        
+        foreach (var hw in _computer.Hardware)
+        {
+            if (hw.HardwareType == HardwareType.GpuNvidia ||
+                hw.HardwareType == HardwareType.GpuAmd ||
+                hw.HardwareType == HardwareType.GpuIntel)
+            {
+                hw.Update();
+                var tempSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
+                var loadSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
+                var powerSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
+                
+                var gpuType = hw.HardwareType switch
+                {
+                    HardwareType.GpuNvidia => "NVIDIA",
+                    HardwareType.GpuAmd => "AMD",
+                    HardwareType.GpuIntel => hw.Name.Contains("Arc", StringComparison.OrdinalIgnoreCase) ? "Intel Arc" : "Intel iGPU",
+                    _ => "Unknown"
+                };
+                
+                Console.WriteLine($"[GPU Detected] {gpuType}: {hw.Name}");
+                Console.WriteLine($"  Temp sensors: [{string.Join(", ", tempSensors.Select(s => $"{s.Name}={s.Value:F0}°C"))}]");
+                Console.WriteLine($"  Load sensors: [{string.Join(", ", loadSensors.Select(s => $"{s.Name}={s.Value:F0}%"))}]");
+                Console.WriteLine($"  Power sensors: [{string.Join(", ", powerSensors.Select(s => $"{s.Name}={s.Value:F1}W"))}]");
+                
+                // Also log to file
+                var logPath = GetLogPath();
+                File.AppendAllText(logPath, $"[{DateTime.Now:O}] [GPU Detected] {gpuType}: {hw.Name}\n");
+                File.AppendAllText(logPath, $"  Temp sensors: [{string.Join(", ", tempSensors.Select(s => $"{s.Name}={s.Value:F0}°C"))}]\n");
+            }
+        }
     }
 
     private static void CleanupHardware()
@@ -209,7 +250,7 @@ class Program
                 if (isArc || sample.GpuTemperature == 0)
                 {
                     var intelTemp = GetSensorValueMulti(hardware, SensorType.Temperature, 
-                        "GPU Core", "GPU Package");
+                        "GPU Core", "GPU Package", "GPU");
                     if (intelTemp > 0) sample.GpuTemperature = intelTemp;
                     
                     if (isArc || string.IsNullOrEmpty(sample.GpuName))
@@ -218,8 +259,22 @@ class Program
                 
                 if (isArc || sample.GpuLoad == 0)
                 {
-                    var intelLoad = GetSensorValueMulti(hardware, SensorType.Load, "GPU Core");
+                    var intelLoad = GetSensorValueMulti(hardware, SensorType.Load, "GPU Core", "D3D 3D");
                     if (intelLoad > 0) sample.GpuLoad = intelLoad;
+                }
+                
+                // Intel Arc power and clock metrics
+                if (isArc)
+                {
+                    var arcPower = GetSensorValueMulti(hardware, SensorType.Power, 
+                        "GPU Power", "GPU Package");
+                    if (arcPower > 0) sample.GpuPower = arcPower;
+                    
+                    var arcClock = GetSensorValue(hardware, SensorType.Clock, "GPU Core");
+                    if (arcClock > 0) sample.GpuClock = arcClock;
+                    
+                    var arcMemClock = GetSensorValue(hardware, SensorType.Clock, "GPU Memory");
+                    if (arcMemClock > 0) sample.GpuMemoryClock = arcMemClock;
                 }
                 break;
                 

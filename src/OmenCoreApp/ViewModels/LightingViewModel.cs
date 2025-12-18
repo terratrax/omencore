@@ -9,6 +9,7 @@ using System.Windows.Media;
 using OmenCore.Corsair;
 using OmenCore.Logitech;
 using OmenCore.Models;
+using OmenCore.Razer;
 using OmenCore.Services;
 using OmenCore.Utils;
 using OmenCore.Views;
@@ -19,6 +20,7 @@ namespace OmenCore.ViewModels
     {
         private readonly CorsairDeviceService _corsairService;
         private readonly LogitechDeviceService _logitechService;
+        private readonly RazerService? _razerService;
         private readonly KeyboardLightingService? _keyboardLightingService;
         private readonly ConfigurationService? _configService;
         private readonly LoggingService _logging;
@@ -45,6 +47,75 @@ namespace OmenCore.ViewModels
         public ReadOnlyObservableCollection<LogitechDevice> LogitechDevices => _logitechService.Devices;
         public ObservableCollection<CorsairLightingPreset> CorsairLightingPresets { get; } = new();
         public ObservableCollection<KeyboardPreset> KeyboardPresets { get; } = new();
+        
+        // Razer properties
+        private ObservableCollection<RazerDevice> _razerDevices = new();
+        private string _razerColorHex = "#00FF00"; // Razer Green
+        private int _razerRedValue = 0;
+        private int _razerGreenValue = 255;
+        private int _razerBlueValue = 0;
+        
+        public ObservableCollection<RazerDevice> RazerDevices => _razerDevices;
+        public bool HasRazerDevices => _razerDevices.Count > 0;
+        public bool IsRazerAvailable => _razerService?.IsAvailable ?? false;
+        public string RazerDeviceStatusText => IsRazerAvailable 
+            ? $"{_razerDevices.Count} device(s) detected" 
+            : "Razer Synapse not detected";
+        
+        public string RazerColorHex
+        {
+            get => _razerColorHex;
+            set
+            {
+                if (_razerColorHex != value)
+                {
+                    _razerColorHex = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        
+        public int RazerRedValue
+        {
+            get => _razerRedValue;
+            set
+            {
+                if (_razerRedValue != value)
+                {
+                    _razerRedValue = Math.Clamp(value, 0, 255);
+                    OnPropertyChanged();
+                    UpdateRazerHexFromRgb();
+                }
+            }
+        }
+        
+        public int RazerGreenValue
+        {
+            get => _razerGreenValue;
+            set
+            {
+                if (_razerGreenValue != value)
+                {
+                    _razerGreenValue = Math.Clamp(value, 0, 255);
+                    OnPropertyChanged();
+                    UpdateRazerHexFromRgb();
+                }
+            }
+        }
+        
+        public int RazerBlueValue
+        {
+            get => _razerBlueValue;
+            set
+            {
+                if (_razerBlueValue != value)
+                {
+                    _razerBlueValue = Math.Clamp(value, 0, 255);
+                    OnPropertyChanged();
+                    UpdateRazerHexFromRgb();
+                }
+            }
+        }
         
         /// <summary>
         /// True if any Corsair devices have been discovered.
@@ -318,6 +389,12 @@ namespace OmenCore.ViewModels
         public ICommand DiscoverLogitechDevicesCommand { get; }
         public ICommand LoadMacroProfileCommand { get; }
         
+        // Razer Commands
+        public ICommand DiscoverRazerDevicesCommand { get; }
+        public ICommand ApplyRazerColorCommand { get; }
+        public ICommand ApplyRazerBreathingCommand { get; }
+        public ICommand ApplyRazerSpectrumCommand { get; }
+        
         // 4-Zone Keyboard Commands
         public ICommand ApplyKeyboardColorsCommand { get; }
         public ICommand ApplyAllZonesSameColorCommand { get; }
@@ -326,10 +403,11 @@ namespace OmenCore.ViewModels
         public ICommand SetZone3ColorCommand { get; }
         public ICommand SetZone4ColorCommand { get; }
 
-        public LightingViewModel(CorsairDeviceService corsairService, LogitechDeviceService logitechService, LoggingService logging, KeyboardLightingService? keyboardLightingService = null, ConfigurationService? configService = null)
+        public LightingViewModel(CorsairDeviceService corsairService, LogitechDeviceService logitechService, LoggingService logging, KeyboardLightingService? keyboardLightingService = null, ConfigurationService? configService = null, RazerService? razerService = null)
         {
             _corsairService = corsairService;
             _logitechService = logitechService;
+            _razerService = razerService;
             _keyboardLightingService = keyboardLightingService;
             _configService = configService;
             _logging = logging;
@@ -347,6 +425,15 @@ namespace OmenCore.ViewModels
             DiscoverLogitechDevicesCommand = new AsyncRelayCommand(async _ => await _logitechService.DiscoverAsync());
             ApplyLogitechColorCommand = new AsyncRelayCommand(async _ => await ApplyLogitechColorAsync(), _ => SelectedLogitechDevice != null);
             LoadMacroProfileCommand = new AsyncRelayCommand(async _ => await LoadMacroProfileAsync());
+            
+            // Razer Commands
+            DiscoverRazerDevicesCommand = new AsyncRelayCommand(async _ => await DiscoverRazerDevicesAsync());
+            ApplyRazerColorCommand = new AsyncRelayCommand(async _ => await ApplyRazerColorAsync());
+            ApplyRazerBreathingCommand = new AsyncRelayCommand(async _ => await ApplyRazerBreathingAsync());
+            ApplyRazerSpectrumCommand = new AsyncRelayCommand(async _ => await ApplyRazerSpectrumAsync());
+            
+            // Initialize Razer service
+            _razerService?.Initialize();
             
             // 4-Zone Keyboard Commands
             ApplyKeyboardColorsCommand = new AsyncRelayCommand(async _ => await ApplyKeyboardColorsAsync());
@@ -434,6 +521,66 @@ namespace OmenCore.ViewModels
             _logitechColorHex = $"#{_logitechRedValue:X2}{_logitechGreenValue:X2}{_logitechBlueValue:X2}";
             OnPropertyChanged(nameof(LogitechColorHex));
         }
+
+        private void UpdateRazerHexFromRgb()
+        {
+            _razerColorHex = $"#{_razerRedValue:X2}{_razerGreenValue:X2}{_razerBlueValue:X2}";
+            OnPropertyChanged(nameof(RazerColorHex));
+        }
+
+        #region Razer Methods
+
+        private async Task DiscoverRazerDevicesAsync()
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                _razerService?.DiscoverDevices();
+                _razerDevices.Clear();
+                if (_razerService?.Devices != null)
+                {
+                    foreach (var device in _razerService.Devices)
+                    {
+                        _razerDevices.Add(device);
+                    }
+                }
+                OnPropertyChanged(nameof(RazerDevices));
+                OnPropertyChanged(nameof(HasRazerDevices));
+                OnPropertyChanged(nameof(RazerDeviceStatusText));
+                await Task.CompletedTask;
+            }, "Discovering Razer devices...");
+        }
+
+        private async Task ApplyRazerColorAsync()
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                _razerService?.SetStaticColor((byte)_razerRedValue, (byte)_razerGreenValue, (byte)_razerBlueValue);
+                _logging.Info($"Applied Razer static color: {RazerColorHex}");
+                await Task.CompletedTask;
+            }, "Applying Razer color...");
+        }
+
+        private async Task ApplyRazerBreathingAsync()
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                _razerService?.SetBreathingEffect((byte)_razerRedValue, (byte)_razerGreenValue, (byte)_razerBlueValue);
+                _logging.Info($"Applied Razer breathing effect: {RazerColorHex}");
+                await Task.CompletedTask;
+            }, "Applying Razer breathing...");
+        }
+
+        private async Task ApplyRazerSpectrumAsync()
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                _razerService?.SetSpectrumEffect();
+                _logging.Info("Applied Razer spectrum cycling effect");
+                await Task.CompletedTask;
+            }, "Applying Razer spectrum...");
+        }
+
+        #endregion
 
         private async Task ApplyCorsairLightingAsync()
         {

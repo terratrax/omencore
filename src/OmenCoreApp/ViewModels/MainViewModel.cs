@@ -47,13 +47,14 @@ namespace OmenCore.ViewModels
         private readonly LoggingService _logging = App.Logging;
         private readonly ConfigurationService _configService = App.Configuration;
         private readonly AppConfig _config;
-        private readonly FanService _fanService;
-        private readonly PerformanceModeService _performanceModeService;
+        private readonly FanService _fanService = null!;
+        private readonly PerformanceModeService _performanceModeService = null!;
         private readonly KeyboardLightingService _keyboardLightingService;
         private readonly SystemOptimizationService _systemOptimizationService;
         private readonly GpuSwitchService _gpuSwitchService;
         private CorsairDeviceService? _corsairDeviceService;
         private LogitechDeviceService? _logitechDeviceService;
+        private OmenCore.Razer.RazerService? _razerService;
         private readonly MacroService _macroService = new();
         private readonly UndervoltService _undervoltService;
         private readonly HardwareMonitoringService _hardwareMonitoringService;
@@ -1105,8 +1106,8 @@ namespace OmenCore.ViewModels
             _omenKeyService.ToggleMaxCoolingRequested += OnOmenKeyToggleMaxCooling;
             
             // Subscribe to service events for UI synchronization (e.g., power automation changes)
-            _fanService.PresetApplied += OnFanPresetApplied;
-            _performanceModeService.ModeApplied += OnPerformanceModeApplied;
+            _fanService!.PresetApplied += OnFanPresetApplied;
+            _performanceModeService!.ModeApplied += OnPerformanceModeApplied;
 
             // Initialize sub-ViewModels that don't depend on async services
             // InitializeSubViewModels(); // Removed in favor of lazy loading
@@ -2100,6 +2101,7 @@ namespace OmenCore.ViewModels
             {
                 _corsairDeviceService = await CorsairDeviceService.CreateAsync(_logging);
                 _logitechDeviceService = await LogitechDeviceService.CreateAsync(_logging);
+                _razerService = new OmenCore.Razer.RazerService(_logging);
                 
                 await DiscoverCorsairDevices();
                 await DiscoverLogitechDevices();
@@ -2109,13 +2111,15 @@ namespace OmenCore.ViewModels
                 {
                     // Show lighting tab if:
                     // 1. Corsair or Logitech peripheral devices are found, OR
-                    // 2. HP OMEN keyboard lighting is available
+                    // 2. HP OMEN keyboard lighting is available, OR
+                    // 3. Razer Synapse is detected
                     bool hasPeripherals = _corsairDeviceService.Devices.Any() || _logitechDeviceService.Devices.Any();
                     bool hasKeyboardLighting = _keyboardLightingService?.IsAvailable ?? false;
+                    bool hasRazer = _razerService?.IsAvailable ?? false;
                     
-                    if (hasPeripherals || hasKeyboardLighting)
+                    if (hasPeripherals || hasKeyboardLighting || hasRazer)
                     {
-                        Lighting = new LightingViewModel(_corsairDeviceService, _logitechDeviceService, _logging, _keyboardLightingService, _configService);
+                        Lighting = new LightingViewModel(_corsairDeviceService, _logitechDeviceService, _logging, _keyboardLightingService, _configService, _razerService);
                         OnPropertyChanged(nameof(Lighting));
                         
                         // Apply saved keyboard colors on startup

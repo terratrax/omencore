@@ -186,7 +186,7 @@ namespace OmenCore.Services
         {
             try
             {
-                _logging.Info($"PowerModeChanged event received: Mode={e.Mode}");
+                _logging.Debug($"PowerModeChanged event received: Mode={e.Mode}");
                 
                 // Handle suspend (S0 Modern Standby) - pause hardware monitoring to prevent fan revving
                 if (e.Mode == PowerModes.Suspend)
@@ -246,17 +246,17 @@ namespace OmenCore.Services
                 // Only respond to actual power line changes
                 if (e.Mode != PowerModes.StatusChange)
                 {
-                    _logging.Info($"Ignoring non-StatusChange event: {e.Mode}");
+                    _logging.Debug($"Ignoring non-StatusChange event: {e.Mode}");
                     return;
                 }
 
                 var currentAcState = GetCurrentAcState();
-                _logging.Info($"Current AC state detected: {currentAcState} (was: {_lastKnownAcState})");
+                _logging.Debug($"Power status check: AC={currentAcState} (was: {_lastKnownAcState})");
                 
                 // Only act if state actually changed
                 if (currentAcState == _lastKnownAcState)
                 {
-                    _logging.Info("Power state unchanged, skipping profile application");
+                    _logging.Debug("Power state unchanged");
                     return;
                 }
 

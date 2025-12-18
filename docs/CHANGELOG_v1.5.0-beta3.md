@@ -150,6 +150,25 @@ Hardware/Drivers (NVML, etc.)
 
 ---
 
+### Critical: GPU Power Boost Reset to Medium When Applying Fan Presets
+**Files Changed:**
+- `Hardware/WmiFanController.cs`
+
+**Problem:** GPU Power Boost set to Maximum (175W TGP on RTX 4090) was being reset to Medium (~45W) whenever a fan preset was applied. This caused significant GPU performance loss during gaming (45W instead of 175W).
+
+**Root Cause:** `WmiFanController.ApplyPreset()` called `ApplyGpuPowerFromPreset()` which set GPU power based on preset name:
+- "performance", "turbo", "gaming" → Maximum
+- "quiet", "silent", "battery" → Minimum  
+- **Everything else (Auto, Max, Custom) → Medium** ❌
+
+This meant applying the "Auto" or "Max" fan preset would override the user's explicitly set GPU Power Boost level.
+
+**Fix:** Removed `ApplyGpuPowerFromPreset()` method entirely. GPU Power Boost is now controlled **independently** via the System tab and is not affected by fan preset changes.
+
+**User Impact:** GPU Power Boost setting now persists correctly. Setting Maximum on the System tab will remain at Maximum regardless of which fan preset is active.
+
+---
+
 ### Critical: Version Display Fixed
 **Files Changed:**
 - `OmenCoreApp.csproj`

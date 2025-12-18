@@ -170,11 +170,48 @@ namespace OmenCore.Hardware
                 _initialized = true;
                 _consecutiveZeroTempReadings = 0;
                 _logger?.Invoke("LibreHardwareMonitor initialized successfully");
+                
+                // Log detected GPUs for diagnostic purposes
+                LogDetectedGpus();
             }
             catch (Exception ex)
             {
                 _initialized = false;
                 _logger?.Invoke($"LibreHardwareMonitor init failed: {ex.Message}. Using WMI fallback.");
+            }
+        }
+        
+        /// <summary>
+        /// Log all detected GPUs and their sensor availability for diagnostics.
+        /// </summary>
+        private void LogDetectedGpus()
+        {
+            if (_computer?.Hardware == null) return;
+            
+            foreach (var hw in _computer.Hardware)
+            {
+                if (hw.HardwareType == HardwareType.GpuNvidia ||
+                    hw.HardwareType == HardwareType.GpuAmd ||
+                    hw.HardwareType == HardwareType.GpuIntel)
+                {
+                    hw.Update();
+                    var tempSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Temperature).ToList();
+                    var loadSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Load).ToList();
+                    var powerSensors = hw.Sensors.Where(s => s.SensorType == SensorType.Power).ToList();
+                    
+                    var gpuType = hw.HardwareType switch
+                    {
+                        HardwareType.GpuNvidia => "NVIDIA",
+                        HardwareType.GpuAmd => "AMD",
+                        HardwareType.GpuIntel => hw.Name.Contains("Arc", StringComparison.OrdinalIgnoreCase) ? "Intel Arc" : "Intel iGPU",
+                        _ => "Unknown"
+                    };
+                    
+                    _logger?.Invoke($"[GPU Detected] {gpuType}: {hw.Name}");
+                    _logger?.Invoke($"  - Temp sensors: [{string.Join(", ", tempSensors.Select(s => $"{s.Name}={s.Value:F0}°C"))}]");
+                    _logger?.Invoke($"  - Load sensors: [{string.Join(", ", loadSensors.Select(s => $"{s.Name}={s.Value:F0}%"))}]");
+                    _logger?.Invoke($"  - Power sensors: [{string.Join(", ", powerSensors.Select(s => $"{s.Name}={s.Value:F1}W"))}]");
+                }
             }
         }
         
@@ -348,9 +385,13 @@ namespace OmenCore.Hardware
                 {
                     if (_disposed) return; // Check before each hardware update
                     
-                    // Use safe GPU update for NVIDIA/AMD GPUs (can crash NVML)
-                    if (hardware.HardwareType == HardwareType.GpuNvidia || 
-                        hardware.HardwareType == HardwareType.GpuAmd)
+                    // Use safe GPU update for all discrete GPUs (NVIDIA/AMD/Intel Arc)
+                    bool isDiscreteGpu = hardware.HardwareType == HardwareType.GpuNvidia || 
+                        hardware.HardwareType == HardwareType.GpuAmd ||
+                        (hardware.HardwareType == HardwareType.GpuIntel && 
+                         hardware.Name.Contains("Arc", StringComparison.OrdinalIgnoreCase));
+                    
+                    if (isDiscreteGpu)
                     {
                         if (!TryUpdateGpuHardware(hardware))
                         {
@@ -874,9 +915,13 @@ namespace OmenCore.Hardware
                     {
                         if (_disposed) return results;
                         
-                        // Use safe GPU update for NVIDIA/AMD GPUs (can crash NVML)
-                        if (hardware.HardwareType == HardwareType.GpuNvidia || 
-                            hardware.HardwareType == HardwareType.GpuAmd)
+                        // Use safe GPU update for all discrete GPUs (NVIDIA/AMD/Intel Arc)
+                        bool isDiscreteGpu = hardware.HardwareType == HardwareType.GpuNvidia || 
+                            hardware.HardwareType == HardwareType.GpuAmd ||
+                            (hardware.HardwareType == HardwareType.GpuIntel && 
+                             hardware.Name.Contains("Arc", StringComparison.OrdinalIgnoreCase));
+                        
+                        if (isDiscreteGpu)
                         {
                             if (!TryUpdateGpuHardware(hardware))
                             {
