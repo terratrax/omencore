@@ -12,13 +12,13 @@
 
 **Priority: UI/UX fixes that don't break functionality**
 
-#### 1.1 System Tray Overhaul ⬜
-- [ ] Create custom context menu control (no white margins)
-- [ ] Dark theme context menu with proper styling
-- [ ] Icons visible at all times (not just on hover)
-- [ ] Smooth hover animations
-- [ ] Temperature display improvements
-- [ ] Compact mode option
+#### 1.1 System Tray Overhaul ✅
+- [x] Create custom context menu control (no white margins)
+- [x] Dark theme context menu with proper styling
+- [x] Icons visible at all times (not just on hover)
+- [x] Smooth hover animations
+- [x] Temperature display improvements
+- [x] Compact mode option
 
 #### 1.2 Dashboard Polish ⬜
 - [ ] Card-based layout with consistent shadows
@@ -41,61 +41,63 @@
 
 ---
 
-### Phase 2: System Optimizer (Alpha 2 - Feb 2026)
+### Phase 2: System Optimizer (Alpha 2 - Feb 2026) ✅
 
 **Priority: High-impact feature users are asking for**
 
-#### 2.1 Core Infrastructure ⬜
-- [ ] Create `Services/SystemOptimizer/` folder structure
-- [ ] `SystemOptimizerService.cs` - main orchestration
-- [ ] `RegistryBackup.cs` - backup/restore registry keys
-- [ ] `OptimizationVerifier.cs` - check current state
+#### 2.1 Core Infrastructure ✅
+- [x] Create `Services/SystemOptimizer/` folder structure
+- [x] `SystemOptimizerService.cs` - main orchestration
+- [x] `RegistryBackupService.cs` - backup/restore registry keys  
+- [x] `OptimizationVerifier.cs` - check current state
 
-#### 2.2 Power Optimizations ⬜
-- [ ] `PowerOptimizer.cs`
-- [ ] Ultimate Performance power plan activation
-- [ ] Hardware GPU scheduling toggle
-- [ ] Game Mode enable/disable
-- [ ] Win32PrioritySeparation optimization
+#### 2.2 Power Optimizations ✅
+- [x] `PowerOptimizer.cs`
+- [x] Ultimate Performance power plan activation
+- [x] Hardware GPU scheduling toggle
+- [x] Game Mode enable/disable
+- [x] Win32PrioritySeparation optimization
 
-#### 2.3 Service Optimizations ⬜
-- [ ] `ServiceOptimizer.cs`
-- [ ] Telemetry service management
-- [ ] SysMain/Superfetch control (SSD detection)
-- [ ] Windows Search indexing toggle
-- [ ] Background task optimization
+#### 2.3 Service Optimizations ✅
+- [x] `ServiceOptimizer.cs`
+- [x] Telemetry service management
+- [x] SysMain/Superfetch control (SSD detection)
+- [x] Windows Search indexing toggle
+- [x] Background task optimization
 
-#### 2.4 Network Optimizations ⬜
-- [ ] `NetworkOptimizer.cs`
-- [ ] TCP optimizations (TcpNoDelay, TcpAckFrequency)
-- [ ] Delivery Optimization (P2P) toggle
-- [ ] Nagle algorithm control
+#### 2.4 Network Optimizations ✅
+- [x] `NetworkOptimizer.cs`
+- [x] TCP optimizations (TcpNoDelay, TcpAckFrequency)
+- [x] Delivery Optimization (P2P) toggle
+- [x] Nagle algorithm control
 
-#### 2.5 Input & Graphics ⬜
-- [ ] `InputOptimizer.cs`
-- [ ] Disable mouse acceleration (pointer precision)
-- [ ] Game DVR/Game Bar control
-- [ ] Input queue size optimization
+#### 2.5 Input & Graphics ✅
+- [x] `InputOptimizer.cs`
+- [x] Disable mouse acceleration (pointer precision)
+- [x] Game DVR/Game Bar control
+- [x] Fullscreen optimizations
 
-#### 2.6 Visual Effects ⬜
-- [ ] `VisualEffectsOptimizer.cs`
-- [ ] Animation toggle
-- [ ] Transparency effects control
-- [ ] Balanced vs Minimal presets
+#### 2.6 Visual Effects ✅
+- [x] `VisualEffectsOptimizer.cs`
+- [x] Animation toggle
+- [x] Transparency effects control
+- [x] Balanced vs Minimal presets
 
-#### 2.7 Storage Optimizations ⬜
-- [ ] `StorageOptimizer.cs`
-- [ ] SSD vs HDD detection
-- [ ] TRIM verification for SSDs
-- [ ] 8.3 filename creation toggle
+#### 2.7 Storage Optimizations ✅
+- [x] `StorageOptimizer.cs`
+- [x] SSD vs HDD detection (WMI MediaType)
+- [x] TRIM enable/disable
+- [x] 8.3 filename creation toggle
+- [x] Last access timestamp optimization
 
-#### 2.8 UI Implementation ⬜
-- [ ] `SystemOptimizerViewModel.cs`
-- [ ] `SystemOptimizerView.xaml`
-- [ ] Add to sidebar navigation
-- [ ] Quick action buttons (Gaming/Balanced/Revert)
-- [ ] Individual toggle switches
-- [ ] Status indicators per optimization
+#### 2.8 UI Implementation ✅
+- [x] `SystemOptimizerViewModel.cs`
+- [x] `SystemOptimizerView.xaml`
+- [x] Add to tab navigation (Optimizer tab)
+- [x] Quick action buttons (Gaming Max/Balanced/Revert)
+- [x] Individual toggle switches
+- [x] Risk indicators per optimization
+- [x] System restore point creation before presets
 
 ---
 
@@ -218,12 +220,24 @@
 #### Added
 - ❄️ Extreme fan preset (100% at 75°C for high-power systems)
 - 🎛️ Extreme button in Fan Control GUI
+- 🎨 **DarkContextMenu control** - Custom context menu with no white margins
+- ⚡ **System Optimizer** - Complete Windows gaming optimization suite
+  - Power: Ultimate Performance plan, GPU scheduling, Game Mode, foreground priority
+  - Services: Telemetry, SysMain/Superfetch, Search Indexing, DiagTrack
+  - Network: TCP NoDelay, ACK frequency, Nagle algorithm, P2P updates
+  - Input: Mouse acceleration, Game DVR, Game Bar, fullscreen optimizations
+  - Visual: Transparency, animations, shadows, performance presets
+  - Storage: TRIM, last access timestamps, 8.3 names, SSD detection
+- 🎯 One-click optimization presets (Gaming Max, Balanced, Revert All)
+- 🔒 Registry backup and system restore point creation
+- 🏷️ Risk indicators for each optimization (Low/Medium/High)
 
 #### Changed
 - 📄 Roadmap renamed from v1.6 to v2.0
+- 🔄 TrayIconService refactored to use DarkContextMenu
 
 #### Fixed
-- (pending)
+- ✅ White margins in system tray context menu eliminated
 
 ---
 
@@ -237,13 +251,13 @@
 
 ### Why Start with System Tray + System Optimizer?
 
-1. **System Tray Fix (Phase 1.1)**
+1. **System Tray Fix (Phase 1.1)** ✅ COMPLETE
    - Currently has visible bugs (white margins, icon issues)
    - Quick visual win that improves user perception
    - Low risk - doesn't affect core functionality
    - ~1-2 days of work
 
-2. **System Optimizer (Phase 2)**
+2. **System Optimizer (Phase 2)** ✅ COMPLETE
    - High user demand (you already have the batch script)
    - Complements existing features (Fan + Thermal + GPU Power + **System Tweaks**)
    - Self-contained - can be developed in parallel
@@ -251,7 +265,7 @@
    - Provides immediate value to gaming users
    - ~2-3 weeks of work
 
-3. **RGB Overhaul (Phase 3) - Later**
+3. **RGB Overhaul (Phase 3) - Next**
    - Requires external SDK dependencies
    - Need device images/logos (licensing considerations)
    - More complex with multiple vendor integrations
@@ -268,14 +282,14 @@
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| 1. Foundation & Quick Wins | 🟡 Starting | 0/20 |
-| 2. System Optimizer | ⚪ Planned | 0/35 |
+| 1. Foundation & Quick Wins | ✅ System Tray Done | 6/20 |
+| 2. System Optimizer | ✅ Complete | 35/35 |
 | 3. RGB Overhaul | ⚪ Planned | 0/24 |
 | 4. Linux Support | ⚪ Planned | 0/12 |
 | 5. Advanced Features | ⚪ Planned | 0/15 |
 | 6. Polish & Release | ⚪ Planned | 0/8 |
 
-**Overall: 0/114 tasks (0%)**
+**Overall: 41/114 tasks (36%)**
 
 ---
 
