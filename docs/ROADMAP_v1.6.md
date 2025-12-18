@@ -408,6 +408,171 @@ Automatically apply settings when specific games launch.
 
 ---
 
+## 🚀 Windows System Optimizer
+
+### 16. Integrated Gaming Optimizer
+
+**Target:** v1.6.0  
+**Effort:** High  
+**Impact:** Very High  
+**Source:** [windows11nontouchgamingoptimizer](https://github.com/theantipopau/windows11nontouchgamingoptimizer)
+
+Port the Windows 11 Gaming Optimizer batch script into a native C# implementation within OmenCore.
+
+#### Rationale
+
+- Same target audience (gamers optimizing Windows for performance)
+- Complements existing fan/thermal/GPU controls
+- Native C# is cleaner, safer, and more maintainable than batch scripts
+- Leverages OmenCore's existing UI, config, and logging systems
+- Can integrate with Game Profiles for automatic per-game optimization
+
+#### Features to Integrate
+
+**Core Optimizations:**
+- ✅ Ultimate/High Performance power plan switching (already have via Performance Modes)
+- 🆕 Debloat Windows 11 - Remove consumer apps, OEM bloatware
+- 🆕 Disable touch/pen features (for non-touch gaming rigs)
+- 🆕 Gaming performance registry tweaks (Game Mode, GPU scheduling, input lag)
+- 🆕 Service optimization (telemetry, indexing, background tasks)
+- 🆕 Network latency tweaks (TCP/IP, delivery optimization)
+- 🆕 Visual effects optimization (animations, transparency)
+- 🆕 Startup program management
+
+**Advanced:**
+- 🆕 GPU latency registry tweaks (20+ vendor-agnostic tweaks)
+- 🆕 Audio latency reduction
+- 🆕 Mouse/keyboard input optimization (disable pointer precision, queue sizes)
+- 🆕 CPU core parking control
+- 🆕 Page file optimization based on RAM
+- 🆕 SSD vs HDD detection with hardware-specific tweaks
+
+**Safety:**
+- 🆕 System Restore point creation before changes
+- 🆕 Full registry backup of modified keys
+- 🆕 Comprehensive undo/revert functionality
+- 🆕 Verification tool to check optimization status
+
+#### New View: System Optimizer
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  System Optimizer                            [Apply] [Undo All] │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Quick Actions:                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │  Gaming     │  │  Balanced   │  │   Revert    │             │
+│  │  Maximum    │  │  Recommended│  │   Defaults  │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+│                                                                 │
+│  Status: 12/15 optimizations active           [View Report]     │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Power & Performance                                            │
+│  ├─ [✓] Ultimate Performance power plan                         │
+│  ├─ [✓] Hardware GPU scheduling                                 │
+│  ├─ [✓] Game Mode enabled                                       │
+│  └─ [✓] Foreground app priority (Win32PrioritySeparation)      │
+│                                                                 │
+│  Services & Background                                          │
+│  ├─ [✓] Disable telemetry services                              │
+│  ├─ [ ] Disable Windows Search indexing                         │
+│  └─ [✓] Disable Superfetch (SSD detected)                       │
+│                                                                 │
+│  Network                                                         │
+│  ├─ [✓] TCP optimizations (TcpNoDelay, TcpAckFrequency)         │
+│  ├─ [✓] Disable Delivery Optimization (P2P)                     │
+│  └─ [ ] Aggressive mode (may affect VPN)        ⚠️              │
+│                                                                 │
+│  Input & Graphics                                               │
+│  ├─ [✓] Disable mouse acceleration                              │
+│  ├─ [✓] Increased input queue sizes                             │
+│  └─ [✓] Disable Game DVR recording                              │
+│                                                                 │
+│  Visual Effects                                                  │
+│  ├─ [ ] Balanced (smooth + performance)                         │
+│  └─ [✓] Minimal (maximum FPS)                                   │
+│                                                                 │
+│  Storage                                                         │
+│  ├─ [✓] SSD: TRIM enabled, defrag disabled                      │
+│  └─ [✓] Disable 8.3 filename creation                           │
+│                                                                 │
+│  Bloatware Management                               [Manage...] │
+│  └─ 24 consumer apps available to remove                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation Architecture
+
+```
+src/OmenCoreApp/
+  Services/
+    SystemOptimizer/
+      SystemOptimizerService.cs       # Main orchestration
+      PowerOptimizer.cs               # Power plans, performance modes
+      ServiceOptimizer.cs             # Windows services management
+      NetworkOptimizer.cs             # TCP/IP, Delivery Optimization
+      VisualEffectsOptimizer.cs       # Animations, transparency
+      InputOptimizer.cs               # Mouse, keyboard settings
+      StorageOptimizer.cs             # SSD/HDD detection, TRIM
+      BloatwareManager.cs             # App removal/restoration
+      RegistryBackup.cs               # Backup/restore registry keys
+      OptimizationVerifier.cs         # Check current state
+  
+  ViewModels/
+    SystemOptimizerViewModel.cs       # UI bindings
+  
+  Views/
+    SystemOptimizerView.xaml          # New sidebar tab
+  
+  Models/
+    OptimizationProfile.cs            # Preset configurations
+    OptimizationState.cs              # Current system state
+```
+
+#### Game Profile Integration
+
+Automatically apply/revert optimizations when games launch:
+
+```json
+{
+  "gameName": "Cyberpunk 2077",
+  "executable": "Cyberpunk2077.exe",
+  "fanPreset": "Gaming",
+  "performanceMode": "Performance",
+  "gpuPowerBoost": "Maximum",
+  "systemOptimizations": {
+    "profile": "Gaming Maximum",
+    "applyOnLaunch": true,
+    "revertOnExit": true
+  }
+}
+```
+
+#### Safety Considerations
+
+- **Laptop Detection**: Warn about battery impact, offer to skip power-intensive tweaks
+- **Restore Points**: Auto-create before applying optimizations (if System Protection enabled)
+- **Registry Backup**: Store all modified keys in `%APPDATA%\OmenCore\registry_backup\`
+- **Incremental Apply**: Each toggle can be applied/reverted independently
+- **Verification**: Show pass/fail status for each optimization
+- **Logging**: Full audit trail of all changes
+
+#### Migration from Batch Script
+
+| Batch Feature | C# Implementation |
+|---------------|-------------------|
+| `reg add` commands | `Microsoft.Win32.Registry` API |
+| `sc config` (services) | `System.ServiceProcess.ServiceController` |
+| `powercfg` | WMI `Win32_PowerPlan` + P/Invoke |
+| `wmic` queries | WMI/CIM via `System.Management` |
+| `PowerShell -Command` | Direct .NET equivalents |
+| Restore point | `System.Management` WMI `SystemRestore` class |
+
+---
+
 ## 🔧 Architecture Improvements (from v1.5 audit)
 
 ### Consolidated Hardware Polling
@@ -458,9 +623,9 @@ Allow independent fan curves for CPU and GPU fans.
 | Phase | Version | Target | Features |
 |-------|---------|--------|----------|
 | Research | - | Jan 2026 | Linux hp-wmi, Avalonia feasibility |
-| Alpha | 1.6.0-alpha | Feb 2026 | Linux CLI, Basic EC access |
-| Beta | 1.6.0-beta | Mar 2026 | Linux daemon, OSD overlay |
-| RC | 1.6.0-rc | Apr 2026 | GPU/CPU OC, Game profiles |
+| Alpha | 1.6.0-alpha | Feb 2026 | Linux CLI, Basic EC access, **System Optimizer core** |
+| Beta | 1.6.0-beta | Mar 2026 | Linux daemon, OSD overlay, **System Optimizer UI** |
+| RC | 1.6.0-rc | Apr 2026 | GPU/CPU OC, Game profiles, **Bloatware manager** |
 | Release | 1.6.0 | May 2026 | Full Linux GUI, All features |
 
 ---
