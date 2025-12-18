@@ -1,4 +1,4 @@
-# OmenCore v1.6 Roadmap
+# OmenCore v2.0 Roadmap
 
 **Target Release:** Q2 2026  
 **Status:** Planning  
@@ -8,8 +8,11 @@
 
 ## Overview
 
-Version 1.6 focuses on:
-- 🐧 **Linux Support** (Priority #1)
+Version 2.0 is a **major release** focusing on:
+- 🎨 **Complete UI/UX Overhaul** (Priority #1)
+- 🌈 **Professional Peripheral RGB Support** (Corsair, Logitech, Razer)
+- 🐧 **Linux Support**
+- 🚀 **Windows System Optimizer Integration**
 - 📺 **On-Screen Display (OSD)** improvements
 - ⚡ **CPU/GPU Overclocking** (beyond undervolting)
 - 🎮 **Advanced Game Integration**
@@ -22,11 +25,257 @@ Version 1.6 focuses on:
 
 ---
 
+## 🎨 Priority #1: Complete UI/UX Overhaul
+
+### 1. Visual Design Refresh
+
+**Target:** v2.0.0-alpha  
+**Effort:** High  
+**Impact:** Very High
+
+Complete redesign of the application interface for improved clarity, consistency, and polish.
+
+#### Goals
+
+- **Modern, cohesive dark theme** across all views
+- **Improved information hierarchy** - important data stands out
+- **Consistent spacing and alignment** throughout
+- **Better use of color** for status indicators and branding
+- **Smooth animations** for state changes
+- **Responsive layouts** for different window sizes
+
+#### System Tray Overhaul
+
+**Current Issues:**
+- White left margin on context menu items
+- Icons/emojis only appear on hover
+- Inconsistent styling with main app
+
+**Fixes:**
+- Custom-drawn context menu with full dark theme
+- Properly styled icons visible at all times (no white background)
+- Smooth hover transitions matching app aesthetic
+- Temperature display refinements
+- Compact mode option
+
+**Mockup:**
+```
+┌─────────────────────────────────┐
+│ 🌡️ CPU: 65°C  GPU: 72°C        │
+├─────────────────────────────────┤
+│ 🔥 Performance Mode         ▶  │
+│ 🌀 Fan Profile              ▶  │
+│ 💡 Keyboard Lighting        ▶  │
+├─────────────────────────────────┤
+│ ⚙️ Settings                     │
+│ 📊 Open Dashboard               │
+├─────────────────────────────────┤
+│ ❌ Exit                         │
+└─────────────────────────────────┘
+```
+
+#### Dashboard View Polish
+
+- **Card-based layout** with consistent shadows and borders
+- **Live graphs** with smoother rendering
+- **Status badges** with clear iconography
+- **Quick action buttons** with hover states
+
+#### Settings View Redesign
+
+- **Grouped sections** with collapsible headers
+- **Toggle switches** instead of checkboxes
+- **Inline help text** for complex options
+- **Search/filter** for finding settings
+
+---
+
+### 2. Typography & Iconography
+
+**Custom icon set** for consistent visual language:
+- Fan speed indicators (animated)
+- Temperature gauges
+- Performance mode badges
+- RGB zone indicators
+- Device connection status
+
+**Typography improvements:**
+- Consistent font weights
+- Better contrast ratios (WCAG AA)
+- Monospace for values (temps, speeds, voltages)
+
+---
+
+### 3. Accessibility Improvements
+
+- Keyboard navigation throughout
+- Screen reader compatibility
+- High contrast mode option
+- Reduced motion option for animations
+
+---
+
+## 🌈 Priority #2: Professional Peripheral RGB Support
+
+### 4. Complete Brand Integration
+
+**Target:** v2.0.0-beta  
+**Effort:** High  
+**Impact:** Very High
+
+Professional-grade RGB control with proper branding, device images, and full SDK integration.
+
+#### Visual Assets
+
+Each peripheral brand section will include:
+- **Official logos** (with permission/licensing)
+- **Device images** showing actual hardware
+- **Connection status indicators** (USB, wireless, Bluetooth)
+- **Battery level** for wireless devices
+- **Firmware version** display
+
+#### UI Mockup - Lighting View
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🌈 Lighting Control                                    [Sync All 🔗]   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─── HP OMEN Keyboard ──────────────────────────────────────────────┐ │
+│  │  [Image: 4-zone keyboard]                                         │ │
+│  │  Zone 1: 🔴  Zone 2: 🟠  Zone 3: 🟡  Zone 4: 🔴    [Apply]       │ │
+│  │  Effect: [Static ▼]  Brightness: [████████░░] 80%                 │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌─── CORSAIR ───────────────────────────────────────────────────────┐ │
+│  │  [Corsair Logo]                           Status: ✅ iCUE Connected │
+│  │                                                                    │ │
+│  │  🖱️ Dark Core RGB PRO                    🔋 85% │ 📡 Wireless     │ │
+│  │     [Device Image]                                                 │ │
+│  │     Color: [🔴 #FF0000]  Effect: [Breathing ▼]  [Apply]           │ │
+│  │                                                                    │ │
+│  │  🎧 HS70 PRO Wireless                    🔋 60% │ 📡 Wireless     │ │
+│  │     [Device Image]                                                 │ │
+│  │     Color: [🔵 #0066FF]  Effect: [Static ▼]     [Apply]           │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌─── RAZER ─────────────────────────────────────────────────────────┐ │
+│  │  [Razer Logo]                          Status: ✅ Chroma Connected │ │
+│  │                                                                    │ │
+│  │  ⌨️ BlackWidow V4 Pro                              🔌 USB         │ │
+│  │     [Device Image]                                                 │ │
+│  │     Mode: [Chroma Effects ▼]                                       │ │
+│  │     [Wave] [Spectrum] [Breathing] [Reactive] [Custom]             │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌─── LOGITECH ──────────────────────────────────────────────────────┐ │
+│  │  [Logitech G Logo]                      Status: ⚠️ G HUB Required  │
+│  │                                                                    │ │
+│  │  🖱️ G Pro X Superlight 2                🔋 45% │ ⚡ LightSpeed    │ │
+│  │     [Device Image]                                                 │ │
+│  │     DPI: [25600 ▼]  Color: [🟢 #00FF00]        [Apply]            │ │
+│  │                                                                    │ │
+│  │  ⌨️ G915 X TKL                          🔋 70% │ ⚡ LightSpeed    │ │
+│  │     [Device Image]                                                 │ │
+│  │     Effect: [LIGHTSYNC ▼]  Brightness: 100%    [Apply]            │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5. Corsair Integration (Enhanced)
+
+**SDK:** iCUE SDK 4.0 + Direct HID fallback
+
+**Features:**
+- Full device enumeration with images
+- Per-LED control for supported devices
+- Hardware lighting mode (persists without software)
+- DPI stages for mice
+- Battery monitoring for wireless devices
+- Macro sync (import from iCUE)
+
+**Device Image Assets:**
+```
+Assets/Corsair/
+  dark-core-rgb-pro.png
+  scimitar-rgb-elite.png
+  hs70-pro-wireless.png
+  k70-rgb-mk2.png
+  mm700-rgb.png
+  ...
+```
+
+---
+
+### 6. Razer Integration (Full Chroma SDK)
+
+**SDK:** Razer Chroma SDK 3.x
+
+**Features:**
+- Full Chroma effect library
+- Per-key RGB for keyboards
+- Mouse zone control
+- Headset lighting
+- Mousepad/dock lighting
+- Chroma Connect apps support
+- Custom effect creator
+
+**Device Image Assets:**
+```
+Assets/Razer/
+  blackwidow-v4-pro.png
+  deathadder-v3-pro.png
+  kraken-v3-pro.png
+  firefly-v2.png
+  ...
+```
+
+---
+
+### 7. Logitech Integration (Enhanced)
+
+**SDK:** G HUB SDK + Direct HID (no G HUB mode)
+
+**Features:**
+- LIGHTSYNC effect support
+- Per-key RGB for G-series keyboards
+- Mouse HERO sensor DPI control
+- PowerPlay charging status
+- LightSpeed wireless status
+- G Cloud device support
+
+**Device Image Assets:**
+```
+Assets/Logitech/
+  g-pro-x-superlight-2.png
+  g502-x-plus.png
+  g915-x-tkl.png
+  g733.png
+  g-cloud.png
+  ...
+```
+
+---
+
+### 8. Unified RGB Engine
+
+**Cross-brand synchronization:**
+- Single color picker → all devices
+- Preset effects that work across brands
+- Audio-reactive mode (all devices pulse to music)
+- Game integration (ammo, health, cooldowns)
+- Screen color sampling (ambient lighting)
+
+---
+
 ## 🔴 Critical Priority: Linux Support
 
 ### 1. Linux CLI Tool (Phase 1)
 
-**Target:** v1.6.0-alpha  
+**Target:** v2.0.0-alpha  
 **Effort:** High  
 **Impact:** Very High
 
@@ -122,7 +371,7 @@ src/
 
 ### 2. Linux GUI (Phase 2)
 
-**Target:** v1.6.0-beta  
+**Target:** v2.0.0-beta  
 **Effort:** Very High  
 
 **Recommended: Avalonia UI**
@@ -155,7 +404,7 @@ WantedBy=multi-user.target
 
 ### 4. In-Game OSD Overlay
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** High  
 **Impact:** High
 
@@ -196,7 +445,7 @@ Show brief notification when performance mode or fan profile changes.
 
 ### 6. CPU Overclocking (Intel)
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Risk:** ⚠️ High - Can cause instability
 
 **Features:**
@@ -215,7 +464,7 @@ public void SetPL2(int watts);
 
 ### 7. GPU Overclocking (NVIDIA)
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** Medium  
 
 **Features:**
@@ -232,7 +481,7 @@ public void SetPL2(int watts);
 
 ### 8. GPU Overclocking (AMD)
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** Medium  
 
 **Features:**
@@ -256,11 +505,14 @@ Save/load overclocking configurations per-game or per-use-case.
 
 ---
 
-## 🎮 Peripheral RGB Support
+## 🎮 Peripheral RGB Support (Legacy - See Priority #2 Above)
+
+> **Note:** The sections below are superseded by the Priority #2 RGB overhaul above.
+> Keeping for technical reference only.
 
 ### 12. Full Razer Chroma SDK Integration
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** Medium  
 **Impact:** High
 
@@ -290,7 +542,7 @@ public async Task ApplyEffect(Guid deviceId, ChromaEffect effect);
 
 ### 13. Enhanced Corsair iCUE SDK Integration
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** Medium  
 **Impact:** High
 
@@ -302,7 +554,7 @@ Upgrade from current HID-direct approach to full iCUE SDK when available.
 - No DPI control
 - No macro support
 
-**v1.6 Goals:**
+**v2.0 Goals:**
 - Integrate official Corsair iCUE SDK
 - Full lighting effect support
 - DPI profile control for mice
@@ -319,7 +571,7 @@ Upgrade from current HID-direct approach to full iCUE SDK when available.
 
 ### 14. Greater Logitech G HUB Integration
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** Medium  
 **Impact:** Medium
 
@@ -330,7 +582,7 @@ Expand Logitech support beyond current basic implementation.
 - Limited to basic SDK features
 - No direct HID fallback
 
-**v1.6 Goals:**
+**v2.0 Goals:**
 - Direct HID support (like Corsair) - no G HUB required
 - Per-key RGB for keyboards
 - Mouse DPI control
@@ -348,7 +600,7 @@ Expand Logitech support beyond current basic implementation.
 
 ### 15. Unified RGB Control
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** High  
 **Impact:** Very High
 
@@ -412,7 +664,7 @@ Automatically apply settings when specific games launch.
 
 ### 16. Integrated Gaming Optimizer
 
-**Target:** v1.6.0  
+**Target:** v2.0.0  
 **Effort:** High  
 **Impact:** Very High  
 **Source:** [windows11nontouchgamingoptimizer](https://github.com/theantipopau/windows11nontouchgamingoptimizer)
@@ -622,10 +874,13 @@ Allow independent fan curves for CPU and GPU fans.
 
 | Phase | Version | Target | Features |
 |-------|---------|--------|----------|
-| Research | - | Jan 2026 | Linux hp-wmi, Avalonia feasibility |
-| Alpha | 1.6.0-alpha | Feb 2026 | Linux CLI, Basic EC access, **System Optimizer core** |
-| Beta | 1.6.0-beta | Mar 2026 | Linux daemon, OSD overlay, **System Optimizer UI** |
-| RC | 1.6.0-rc | Apr 2026 | GPU/CPU OC, Game profiles, **Bloatware manager** |
+| Alpha 1 | 2.0.0-alpha1 | Jan 2026 | **UI/UX Overhaul** - System tray fix, dark theme consistency |
+| Alpha 2 | 2.0.0-alpha2 | Feb 2026 | **RGB Overhaul** - Device images, brand logos, connection status |
+| Alpha 3 | 2.0.0-alpha3 | Feb 2026 | Linux CLI, Basic EC access |
+| Beta 1 | 2.0.0-beta1 | Mar 2026 | **Full Corsair/Razer/Logitech SDK** integration |
+| Beta 2 | 2.0.0-beta2 | Mar 2026 | Linux daemon, OSD overlay, **System Optimizer UI** |
+| RC | 2.0.0-rc | Apr 2026 | GPU/CPU OC, Game profiles, Bloatware manager |
+| Release | 2.0.0 | May 2026 | Full Linux GUI, All features, Polish |
 | Release | 1.6.0 | May 2026 | Full Linux GUI, All features |
 
 ---

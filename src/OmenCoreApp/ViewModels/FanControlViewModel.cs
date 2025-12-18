@@ -97,6 +97,7 @@ namespace OmenCore.ViewModels
                     _activeFanMode = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IsMaxSelected));
+                    OnPropertyChanged(nameof(IsExtremeSelected));
                     OnPropertyChanged(nameof(IsGamingSelected));
                     OnPropertyChanged(nameof(IsAutoSelected));
                     OnPropertyChanged(nameof(IsSilentSelected));
@@ -109,6 +110,12 @@ namespace OmenCore.ViewModels
         {
             get => _activeFanMode == "Max";
             set { if (value) ActiveFanMode = "Max"; }
+        }
+        
+        public bool IsExtremeSelected
+        {
+            get => _activeFanMode == "Extreme";
+            set { if (value) ActiveFanMode = "Extreme"; }
         }
         
         public bool IsGamingSelected
@@ -165,6 +172,7 @@ namespace OmenCore.ViewModels
         
         // Quick preset commands
         public ICommand ApplyMaxCoolingCommand { get; }
+        public ICommand ApplyExtremeModeCommand { get; }
         public ICommand ApplyAutoModeCommand { get; }
         public ICommand ApplyQuietModeCommand { get; }
         public ICommand ApplyGamingModeCommand { get; }
@@ -190,6 +198,7 @@ namespace OmenCore.ViewModels
             
             // Quick preset buttons
             ApplyMaxCoolingCommand = new RelayCommand(_ => ApplyFanMode("Max"));
+            ApplyExtremeModeCommand = new RelayCommand(_ => ApplyFanMode("Extreme"));
             ApplyAutoModeCommand = new RelayCommand(_ => ApplyFanMode("Auto"));
             ApplyQuietModeCommand = new RelayCommand(_ => ApplyQuietMode());
             ApplyGamingModeCommand = new RelayCommand(_ => ApplyGamingMode());
@@ -204,6 +213,13 @@ namespace OmenCore.ViewModels
                 Mode = FanMode.Max,
                 IsBuiltIn = true,
                 Curve = new() { new FanCurvePoint { TemperatureC = 0, FanPercent = 100 } }
+            });
+            FanPresets.Add(new FanPreset 
+            { 
+                Name = "Extreme", 
+                Mode = FanMode.Performance,
+                IsBuiltIn = true,
+                Curve = GetExtremeCurve()
             });
             FanPresets.Add(new FanPreset 
             { 
@@ -378,6 +394,7 @@ namespace OmenCore.ViewModels
             ActiveFanMode = preset.Name switch
             {
                 "Max" => "Max",
+                "Extreme" => "Extreme",
                 "Gaming" => "Gaming",
                 "Auto" => "Auto",
                 "Quiet" or "Silent" => "Silent",
@@ -627,6 +644,21 @@ namespace OmenCore.ViewModels
                 new() { TemperatureC = 65, FanPercent = 65 },
                 new() { TemperatureC = 75, FanPercent = 85 },
                 new() { TemperatureC = 80, FanPercent = 100 }
+            };
+        }
+        
+        private static List<FanCurvePoint> GetExtremeCurve()
+        {
+            // Extreme mode: maximum cooling for high-power systems (13900HX + 4090 class)
+            // Starts aggressive early to prevent thermal spikes, prioritizes temps over noise
+            // Recommended for: sustained gaming, benchmarks, thermal throttling prevention
+            return new List<FanCurvePoint>
+            {
+                new() { TemperatureC = 40, FanPercent = 40 },
+                new() { TemperatureC = 50, FanPercent = 55 },
+                new() { TemperatureC = 60, FanPercent = 75 },
+                new() { TemperatureC = 70, FanPercent = 90 },
+                new() { TemperatureC = 75, FanPercent = 100 }
             };
         }
         
