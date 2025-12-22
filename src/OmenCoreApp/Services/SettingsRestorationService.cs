@@ -254,19 +254,53 @@ namespace OmenCore.Services
             
             try
             {
-                // Look up the preset by name from config
+                // First, look up the preset by name from config (custom presets)
                 var preset = _configService.Config.FanPresets
                     .FirstOrDefault(p => p.Name.Equals(savedPresetName, StringComparison.OrdinalIgnoreCase));
-                
-                if (preset == null)
+
+                if (preset != null)
                 {
-                    _logging.Warn($"SettingsRestoration: Fan preset '{savedPresetName}' not found in config");
-                    return true; // Not a failure, preset may have been deleted
+                    _fanService.ApplyPreset(preset);
+                    FanPresetRestored = true;
+                    _logging.Info($"✓ Fan preset restored from config: {savedPresetName}");
+                    RaiseSettingsRestored("FanPreset", savedPresetName, true);
+                    return true;
                 }
-                
-                _fanService.ApplyPreset(preset);
+
+                // Not a custom preset - handle built-in names
+                var nameLower = savedPresetName.ToLowerInvariant();
+                if (nameLower == "max" || nameLower.Contains("max"))
+                {
+                    _fanService.ApplyMaxCooling();
+                    FanPresetRestored = true;
+                    _logging.Info($"✓ Fan preset restored: {savedPresetName} (Max)");
+                    RaiseSettingsRestored("FanPreset", savedPresetName, true);
+                    return true;
+                }
+
+                if (nameLower == "auto" || nameLower == "default")
+                {
+                    _fanService.ApplyAutoMode();
+                    FanPresetRestored = true;
+                    _logging.Info($"✓ Fan preset restored: {savedPresetName} (Auto)");
+                    RaiseSettingsRestored("FanPreset", savedPresetName, true);
+                    return true;
+                }
+
+                if (nameLower == "quiet" || nameLower == "silent")
+                {
+                    _fanService.ApplyQuietMode();
+                    FanPresetRestored = true;
+                    _logging.Info($"✓ Fan preset restored: {savedPresetName} (Quiet)");
+                    RaiseSettingsRestored("FanPreset", savedPresetName, true);
+                    return true;
+                }
+
+                // Fallback: attempt to apply preset by name via a generic FanPreset (use Mode=Performance as hint)
+                var fallbackPreset = new FanPreset { Name = savedPresetName, Mode = FanMode.Performance };
+                _fanService.ApplyPreset(fallbackPreset);
                 FanPresetRestored = true;
-                _logging.Info($"✓ Fan preset restored: {savedPresetName}");
+                _logging.Info($"✓ Fan preset restored via fallback: {savedPresetName}");
                 RaiseSettingsRestored("FanPreset", savedPresetName, true);
                 return true;
             }

@@ -548,8 +548,13 @@ namespace OmenCore.ViewModels
             
             // Persist to config file
             SavePresetsToConfig();
+
+            // Select and apply the newly saved preset immediately for better UX
+            SelectedPreset = preset;
+            _fanService.ApplyPreset(preset);
+            SaveLastPresetToConfig(preset.Name);
             
-            _logging.Info($"✓ Saved custom fan preset: '{preset.Name}' with {preset.Curve.Count} points");
+            _logging.Info($"✓ Saved and applied custom fan preset: '{preset.Name}' with {preset.Curve.Count} points");
         }
         
         private void SavePresetsToConfig()
