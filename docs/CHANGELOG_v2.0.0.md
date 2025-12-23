@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **🔴 Keyboard Color Auto-Change** - Fixed program automatically changing keyboard to red on startup
  - **🌡️ High CPU Temps at Low Usage** - Improved CPU temperature monitoring accuracy
  - **🐌 Fan Profile Transition Latency** - Optimized fan profile switching speed
+   - Improved transition responsiveness and reduced perceived latency when switching profiles
+ - **⚙️ Fan persistence & restore** - Fixed startup restoration for saved fan presets (built-in names like "Max", "Auto", "Quiet" are now recognized and reapplied on boot); added a manual "Force reapply" command and non-blocking verification to handle firmware that resets fan control
+ - **⚙️ Fan smoothing & immediate apply** - Added configurable fan transition smoothing (ramped increments) to reduce abrupt speed changes and an "Immediate Apply" option for low-latency user-triggered changes
  - **🔄 Quick Profile State Mismatch** - Fixed discrepancy between active profile display and actual state
 
 ### Technical
@@ -66,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **🔧 Service Layer** - RegistryBackupService, OptimizationVerifier, multiple optimizer classes
 - **🎨 XAML Styling** - Modern UI with consistent theming
 - **🧪 Unit Tests** - All tests passing, including new Corsair device service test
+- **🔬 Fan Tests & APIs** - Added unit tests for fan restore, force-reapply, and smoothing behavior; added `ForceReapplyFanPresetAsync` API and `FanTransitionSettings` configuration
 - **📦 Build System** - Clean compilation with no warnings
 
 ---
