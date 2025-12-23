@@ -110,26 +110,40 @@ namespace OmenCore.Services
             var json = JsonSerializer.Serialize(config, _jsonOptions);
 
             // Write to a temp file then atomically replace to reduce chance of file lock/contention
-            var tmpPath = _configPath + ".tmp";
-            try
+            var tmpPath = _configPath + "." + Guid.NewGuid().ToString() + ".tmp";
+            var maxAttempts = 3;
+            var attempt = 0;
+            while (true)
             {
-                File.WriteAllText(tmpPath, json);
-                // If config exists, replace it, otherwise move temp to path
-                if (File.Exists(_configPath))
+                try
                 {
-                    File.Replace(tmpPath, _configPath, null);
+                    File.WriteAllText(tmpPath, json);
+                    // If config exists, replace it, otherwise move temp to path
+                    if (File.Exists(_configPath))
+                    {
+                        File.Replace(tmpPath, _configPath, null);
+                    }
+                    else
+                    {
+                        File.Move(tmpPath, _configPath);
+                    }
+
+                    break;
                 }
-                else
+                catch (IOException)
                 {
-                    File.Move(tmpPath, _configPath);
+                    attempt++;
+                    if (attempt >= maxAttempts)
+                    {
+                        // Last resort: open with shared write
+                        using var fs = new FileStream(_configPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                        using var sw = new StreamWriter(fs);
+                        sw.Write(json);
+                        break;
+                    }
+                    // Slight backoff before retry
+                    Thread.Sleep(150);
                 }
-            }
-            catch (IOException)
-            {
-                // Fall back to an open-with-share write to be tolerant in test/CI
-                using var fs = new FileStream(_configPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                using var sw = new StreamWriter(fs);
-                sw.Write(json);
             }
         }
 
