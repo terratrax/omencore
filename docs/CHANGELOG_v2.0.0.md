@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Improved transition responsiveness and reduced perceived latency when switching profiles
  - **⚙️ Fan persistence & restore** - Fixed startup restoration for saved fan presets (built-in names like "Max", "Auto", "Quiet" are now recognized and reapplied on boot); added a manual "Force reapply" command and non-blocking verification to handle firmware that resets fan control
  - **⚙️ Fan smoothing & immediate apply** - Added configurable fan transition smoothing (ramped increments) to reduce abrupt speed changes and an "Immediate Apply" option for low-latency user-triggered changes
+  - **UI:** Added Immediate Apply checkbox and smoothing duration/step inputs to the Fan control panel (Settings → Fan).
  - **🔄 Quick Profile State Mismatch** - Fixed discrepancy between active profile display and actual state
 
 ### Technical

@@ -183,7 +183,58 @@ namespace OmenCore.ViewModels
         public bool ImmediateApplyOnApply
         {
             get => _immediateApplyOnApply;
-            set { if (_immediateApplyOnApply != value) { _immediateApplyOnApply = value; OnPropertyChanged(); } }
+            set
+            {
+                if (_immediateApplyOnApply != value)
+                {
+                    _immediateApplyOnApply = value;
+                    OnPropertyChanged();
+
+                    // Persist setting and apply to config
+                    var cfg = _configService.Load();
+                    cfg.FanTransition.ApplyImmediatelyOnUserAction = _immediateApplyOnApply;
+                    _configService.Save(cfg);
+                }
+            }
+        }
+
+        private int _smoothingDurationMs;
+        public int SmoothingDurationMs
+        {
+            get => _smoothingDurationMs;
+            set
+            {
+                if (_smoothingDurationMs != value)
+                {
+                    _smoothingDurationMs = value;
+                    OnPropertyChanged();
+
+                    // Persist and apply to service
+                    var cfg = _configService.Load();
+                    cfg.FanTransition.SmoothingDurationMs = Math.Max(0, _smoothingDurationMs);
+                    _configService.Save(cfg);
+                    _fanService.SetSmoothingSettings(cfg.FanTransition);
+                }
+            }
+        }
+
+        private int _smoothingStepMs;
+        public int SmoothingStepMs
+        {
+            get => _smoothingStepMs;
+            set
+            {
+                if (_smoothingStepMs != value)
+                {
+                    _smoothingStepMs = value;
+                    OnPropertyChanged();
+
+                    var cfg = _configService.Load();
+                    cfg.FanTransition.SmoothingStepMs = Math.Max(50, _smoothingStepMs);
+                    _configService.Save(cfg);
+                    _fanService.SetSmoothingSettings(cfg.FanTransition);
+                }
+            }
         }
 
         public FanControlViewModel(FanService fanService, ConfigurationService configService, LoggingService logging)
@@ -197,6 +248,10 @@ namespace OmenCore.ViewModels
             ImmediateApplyOnApply = _configService.Config.FanTransition.ApplyImmediatelyOnUserAction;
             
             ApplyCustomCurveCommand = new RelayCommand(_ => ApplyCustomCurve());
+
+            // Initialize transition values from config
+            SmoothingDurationMs = _configService.Config.FanTransition.SmoothingDurationMs;
+            SmoothingStepMs = _configService.Config.FanTransition.SmoothingStepMs;
             SaveCustomPresetCommand = new RelayCommand(_ => SaveCustomPreset());
             ImportPresetsCommand = new RelayCommand(_ => ImportPresets());
             ExportPresetsCommand = new RelayCommand(_ => ExportPresets());

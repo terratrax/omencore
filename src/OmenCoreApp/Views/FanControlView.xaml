@@ -198,6 +198,19 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
+
+                    <!-- Fan Transition Settings -->
+                    <StackPanel Grid.Column="1" Orientation="Vertical" Margin="12,44,0,0">
+                        <CheckBox Content="Immediate apply on Save/Apply" IsChecked="{Binding ImmediateApplyOnApply, Mode=TwoWay}" ToolTip="When enabled, saving or applying presets will immediately apply the fan changes, bypassing smoothing/hysteresis."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Smoothing duration (ms):" VerticalAlignment="Center" Style="{StaticResource Caption}" Margin="0,0,8,0"/>
+                            <TextBox Text="{Binding SmoothingDurationMs, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Width="80" Style="{StaticResource ModernTextBox}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Smoothing step (ms):" VerticalAlignment="Center" Style="{StaticResource Caption}" Margin="0,0,8,0"/>
+                            <TextBox Text="{Binding SmoothingStepMs, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Width="80" Style="{StaticResource ModernTextBox}"/>
+                        </StackPanel>
+                    </StackPanel>
                 </Grid>
             </Grid>
         </Border>

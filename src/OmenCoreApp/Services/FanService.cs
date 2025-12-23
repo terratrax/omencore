@@ -52,6 +52,11 @@ namespace OmenCore.Services
         private bool _smoothingEnabled = true;
         private int _smoothingDurationMs = 1000;
         private int _smoothingStepMs = 200;
+
+        // Expose for tests and read-only inspection
+        public bool SmoothingEnabled => _smoothingEnabled;
+        public int SmoothingDurationMs => _smoothingDurationMs;
+        public int SmoothingStepMs => _smoothingStepMs;
         
         // Adaptive polling - reduce DPC latency by polling less when stable
         private double _lastCpuTemp = 0;
