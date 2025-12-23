@@ -10,59 +10,65 @@ namespace OmenCoreApp.Tests.ViewModels
 {
     public class KeyboardDiagnosticsViewModelTests
     {
-        private class TestCorsairService : CorsairDeviceService
+        private class TestCorsairSdkProvider : OmenCore.Services.Corsair.ICorsairSdkProvider
         {
-            public List<CorsairDevice> TestDevices { get; } = new();
-
-            public TestCorsairService() : base(null)
+            public Task<bool> InitializeAsync() => Task.FromResult(true);
+            public Task<IEnumerable<OmenCore.Corsair.CorsairDevice>> DiscoverDevicesAsync()
             {
-                // Mock devices
-                TestDevices.Add(new CorsairDevice { Model = "K70 RGB", Type = CorsairDeviceType.Keyboard });
+                var list = new[] { new OmenCore.Corsair.CorsairDevice { Name = "K70 RGB", DeviceType = OmenCore.Corsair.CorsairDeviceType.Keyboard } };
+                return Task.FromResult<IEnumerable<OmenCore.Corsair.CorsairDevice>>(list);
             }
-
-            public override Task DiscoverAsync()
-            {
-                Devices.Clear();
-                Devices.AddRange(TestDevices);
-                return Task.CompletedTask;
-            }
+            public Task ApplyLightingAsync(OmenCore.Corsair.CorsairDevice device, OmenCore.Corsair.CorsairLightingPreset preset) => Task.CompletedTask;
+            public Task ApplyDpiStagesAsync(OmenCore.Corsair.CorsairDevice device, IEnumerable<OmenCore.Corsair.CorsairDpiStage> stages) => Task.CompletedTask;
+            public Task ApplyMacroAsync(OmenCore.Corsair.CorsairDevice device, OmenCore.Corsair.MacroProfile macro) => Task.CompletedTask;
+            public Task SyncWithThemeAsync(IEnumerable<OmenCore.Corsair.CorsairDevice> devices, OmenCore.Models.LightingProfile theme) => Task.CompletedTask;
+            public Task<OmenCore.Corsair.CorsairDeviceStatus> GetDeviceStatusAsync(OmenCore.Corsair.CorsairDevice device) => Task.FromResult(device.Status);
+            public void Shutdown() { }
         }
 
-        private class TestLogitechService : LogitechDeviceService
+        private class TestLogitechSdkProvider : OmenCore.Services.Logitech.ILogitechSdkProvider
         {
-            public List<LogitechDevice> TestDevices { get; } = new();
-
-            public TestLogitechService() : base(null)
+            public Task<bool> InitializeAsync() => Task.FromResult(true);
+            public Task<IEnumerable<OmenCore.Logitech.LogitechDevice>> DiscoverDevicesAsync()
             {
-                TestDevices.Add(new LogitechDevice { Model = "G915 TKL", Type = LogitechDeviceType.Keyboard });
+                var list = new[] { new OmenCore.Logitech.LogitechDevice { Name = "G915 TKL", DeviceType = OmenCore.Logitech.LogitechDeviceType.Keyboard } };
+                return Task.FromResult<IEnumerable<OmenCore.Logitech.LogitechDevice>>(list);
             }
-
-            public override Task DiscoverAsync()
-            {
-                Devices.Clear();
-                Devices.AddRange(TestDevices);
-                return Task.CompletedTask;
-            }
+            public Task ApplyStaticColorAsync(OmenCore.Logitech.LogitechDevice device, string hexColor, int brightness) { device.CurrentColorHex = hexColor; return Task.CompletedTask; }
+            public Task ApplyBreathingEffectAsync(OmenCore.Logitech.LogitechDevice device, string hexColor, int speed) => Task.CompletedTask;
+            public Task<int> GetDpiAsync(OmenCore.Logitech.LogitechDevice device) => Task.FromResult(device.Status.Dpi);
+            public Task SetDpiAsync(OmenCore.Logitech.LogitechDevice device, int dpi) { device.Status.Dpi = dpi; return Task.CompletedTask; }
+            public Task<OmenCore.Logitech.LogitechDeviceStatus> GetDeviceStatusAsync(OmenCore.Logitech.LogitechDevice device) => Task.FromResult(device.Status);
+            public Task SyncWithThemeAsync(IEnumerable<OmenCore.Logitech.LogitechDevice> devices, OmenCore.Models.LightingProfile profile) => Task.CompletedTask;
+            public void Shutdown() { }
         }
 
         private class TestKeyboardLightingService : KeyboardLightingService
         {
-            public TestKeyboardLightingService() : base(null, null, null, null)
+            public TestKeyboardLightingService(LoggingService logging) : base(logging, null, null, null)
             {
-                // Mock as available
+                // Force internal flags to mark WMI available for tests
+                var t = this.GetType().BaseType ?? this.GetType();
+                var wmiField = t.GetField("_wmiAvailable", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (wmiField != null) wmiField.SetValue(this, true);
             }
-
-            public override bool IsAvailable => true;
-            public override string BackendType => "WMI BIOS";
         }
 
         [Fact]
         public async Task RunDeviceDetection_DetectsAllServices()
         {
             var logging = new LoggingService(); logging.Initialize();
-            var corsair = new TestCorsairService();
-            var logitech = new TestLogitechService();
-            var keyboard = new TestKeyboardLightingService();
+            var corsairProvider = new TestCorsairSdkProvider();
+            var corsair = new CorsairDeviceService(corsairProvider, logging);
+            var cField = typeof(CorsairDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            cField.SetValue(corsair, true);
+
+            var logitechProvider = new TestLogitechSdkProvider();
+            var logitech = new LogitechDeviceService(logitechProvider, logging);
+            var lField = typeof(LogitechDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            lField.SetValue(logitech, true);
+
+            var keyboard = new TestKeyboardLightingService(logging);
 
             var vm = new KeyboardDiagnosticsViewModel(corsair, logitech, keyboard, null, logging);
 
@@ -85,9 +91,17 @@ namespace OmenCoreApp.Tests.ViewModels
         public async Task RunTestPattern_AppliesToAvailableServices()
         {
             var logging = new LoggingService(); logging.Initialize();
-            var corsair = new TestCorsairService();
-            var logitech = new TestLogitechService();
-            var keyboard = new TestKeyboardLightingService();
+            var corsairProvider = new TestCorsairSdkProvider();
+            var corsair = new CorsairDeviceService(corsairProvider, logging);
+            var cField = typeof(CorsairDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            cField.SetValue(corsair, true);
+
+            var logitechProvider = new TestLogitechSdkProvider();
+            var logitech = new LogitechDeviceService(logitechProvider, logging);
+            var lField = typeof(LogitechDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            lField.SetValue(logitech, true);
+
+            var keyboard = new TestKeyboardLightingService(logging);
 
             var vm = new KeyboardDiagnosticsViewModel(corsair, logitech, keyboard, null, logging);
 
@@ -106,9 +120,17 @@ namespace OmenCoreApp.Tests.ViewModels
         public async Task ClearTestPattern_ResetsServices()
         {
             var logging = new LoggingService(); logging.Initialize();
-            var corsair = new TestCorsairService();
-            var logitech = new TestLogitechService();
-            var keyboard = new TestKeyboardLightingService();
+            var corsairProvider = new TestCorsairSdkProvider();
+            var corsair = new CorsairDeviceService(corsairProvider, logging);
+            var cField = typeof(CorsairDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            cField.SetValue(corsair, true);
+
+            var logitechProvider = new TestLogitechSdkProvider();
+            var logitech = new LogitechDeviceService(logitechProvider, logging);
+            var lField = typeof(LogitechDeviceService).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            lField.SetValue(logitech, true);
+
+            var keyboard = new TestKeyboardLightingService(logging);
 
             var vm = new KeyboardDiagnosticsViewModel(corsair, logitech, keyboard, null, logging);
 

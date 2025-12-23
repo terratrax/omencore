@@ -108,7 +108,29 @@ namespace OmenCore.Services
         public void Save(AppConfig config)
         {
             var json = JsonSerializer.Serialize(config, _jsonOptions);
-            File.WriteAllText(_configPath, json);
+
+            // Write to a temp file then atomically replace to reduce chance of file lock/contention
+            var tmpPath = _configPath + ".tmp";
+            try
+            {
+                File.WriteAllText(tmpPath, json);
+                // If config exists, replace it, otherwise move temp to path
+                if (File.Exists(_configPath))
+                {
+                    File.Replace(tmpPath, _configPath, null);
+                }
+                else
+                {
+                    File.Move(tmpPath, _configPath);
+                }
+            }
+            catch (IOException)
+            {
+                // Fall back to an open-with-share write to be tolerant in test/CI
+                using var fs = new FileStream(_configPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using var sw = new StreamWriter(fs);
+                sw.Write(json);
+            }
         }
 
         public string GetConfigFolder() => _configDirectory;
