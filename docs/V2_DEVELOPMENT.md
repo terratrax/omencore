@@ -116,6 +116,7 @@ Notes: Initial asset folders and placeholder images created. Next: gather real d
 
 #### 3.2 Enhanced Corsair SDK ⬜
 - [ ] Upgrade to iCUE SDK 4.0
+- [x] Preset application support (`preset:<name>`) and basic device enumeration implemented
 - [ ] Full device enumeration with images
 - [ ] Battery status for wireless devices
 - [ ] DPI control for mice
@@ -130,6 +131,7 @@ Notes: Initial asset folders and placeholder images created. Next: gather real d
 #### 3.4 Enhanced Logitech SDK ⬜
 - [ ] G HUB SDK integration
 - [ ] Direct HID fallback (no G HUB required)
+- [x] Static color with brightness and breathing effect support implemented
 - [ ] LightSpeed wireless status
 - [ ] PowerPlay charging status
 
@@ -144,6 +146,15 @@ Notes: Initial asset folders and placeholder images created. Next: gather real d
 - [ ] Connection status indicators
 - [ ] Battery level display
 - [ ] Per-device controls
+- [x] "Apply to System" action added to Lighting View (button + command) — partial UI hook implemented
+
+**Progress update (2025-12-28):**
+- Initial provider wiring implemented (`IRgbProvider`, `RgbManager`). Providers registered in priority order: **Corsair → Logitech → Razer → SystemGeneric**.
+- **Corsair**: `CorsairRgbProvider` added; supports `color:#RRGGBB` and `preset:<name>`; unit tests added and passing.
+- **Logitech**: `LogitechRgbProvider` implements `color:#RRGGBB@<brightness>` and `breathing:#RRGGBB@<speed>`; unit tests added and passing.
+- **Razer**: Basic `RazerRgbProvider` wraps `RazerService` for Synapse-aware behavior (placeholder for Chroma SDK integration).
+- **SystemGeneric**: `RgbNetSystemProvider` added (experimental) using RGB.NET; initialization and basic color application validated in tests.
+- Added unit tests for providers; all related provider tests pass locally (see `OmenCoreApp.Tests/TestResults/test_results.trx`).
 
 ---
 
@@ -305,12 +316,12 @@ Notes: Initial asset folders and placeholder images created. Next: gather real d
 |-------|--------|----------|
 | 1. Foundation & Quick Wins | ✅ System Tray Done | 6/20 |
 | 2. System Optimizer | ✅ Complete | 35/35 |
-| 3. RGB Overhaul | ⚪ Planned | 0/24 |
+| 3. RGB Overhaul | ⚪ In Progress | 3/24 |
 | 4. Linux Support | ⚪ Planned | 0/12 |
 | 5. Advanced Features | ⚪ Planned | 0/15 |
 | 6. Polish & Release | ⚪ Planned | 0/8 |
 
-**Overall: 44/114 tasks (39%)**
+**Overall: 46/114 tasks (40%)**
 
 ---
 
@@ -322,4 +333,4 @@ Notes: Initial asset folders and placeholder images created. Next: gather real d
 
 ---
 
-*Last Updated: December 23, 2025*
+*Last Updated: December 28, 2025*

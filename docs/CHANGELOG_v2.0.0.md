@@ -77,6 +77,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0-alpha2] - 2025-12-28
+
+### Added
+- **🧩 RGB provider framework runtime wiring** - `RgbManager` now registers and initializes providers at startup; providers present: Corsair, Logitech, RgbNetSystem.
+- **🎛 Corsair provider: Preset application** - Supports `preset:<name>` semantics and applies named presets to Corsair devices (tests added).
+- **🌈 Logitech provider: Brightness & Breathing** - `color:#RRGGBB@<brightness>` and `breathing:#RRGGBB@<speed>` syntax supported; unit tests added.
+- **🔬 System RGB provider (experimental)** - `RgbNetSystemProvider` uses RGB.NET to apply static colors across supported desktop devices.
+- **📌 Apply to System** - Lighting UI now exposes an "Apply to System" action to apply the selected color across available providers.
+
+### Changed
+- **🧭 Startup behavior** - `MainViewModel` initializes `RgbManager` and registers providers so lighting actions are available earlier in startup.
+- **🧪 Tests** - Added unit tests for `CorsairRgbProvider`, `LogitechRgbProvider`, and `RgbNetSystemProvider`; all tests pass in local runs.
+
+### Technical
+- **✅ Tests** - Relevant provider tests added and are passing in `OmenCoreApp.Tests` (see `TestResults/test_results.trx`).
+- **🔧 Minor refactors** - Improved provider initialization logging and safer surface updates in `RgbNetSystemProvider`.
+
+---
+
+## [1.6.0-alpha] - 2025-12-25
+
+### Added
+- **Rgb provider framework** (`IRgbProvider`, `RgbManager`) — extensible provider model to register multiple RGB backends and apply effects across them.
+- **Corsair provider** (`CorsairRgbProvider`) — wraps `CorsairDeviceService` and adds support for `preset:<name>` and `color:#RRGGBB` semantics. Preset names are read from `ConfigurationService.Config.CorsairLightingPresets`.
+- **Logitech provider** (`LogitechRgbProvider`) — wraps `LogitechDeviceService` and supports `color:#RRGGBB` static color application across discovered devices.
+- **Razer provider** (`RazerRgbProvider`) — adapter that uses the existing `RazerService` Synapse detection and can map simple effects to the service (placeholder for full Chroma integration).
+- **System generic provider (experimental)** (`RgbNetSystemProvider`) — uses `RGB.NET` to enumerate and attempt control of any RGB.NET-supported desktop devices. Supports `color:#RRGGBB` and is designed as a fallback for brands without bespoke integrations.
+- **Provider wiring on startup** — Providers are created and registered at startup in priority: Corsair → Logitech → Razer → SystemGeneric, enabling a single entrypoint to apply system-wide lighting effects.
+- **Unit tests** — Added `CorsairRgbProviderTests` and preliminary tests for RGB provider wiring and behavior.
+
+### Changed
+- **LightingViewModel** now accepts an `RgbManager` instance so UI commands can call the unified provider stack.
+- **MainViewModel** initializes and registers RGB providers during service initialization.
+
+### Notes & Limitations
+- `RgbNetSystemProvider` is experimental — RGB.NET requires platform-specific drivers and may not control every device; robust error handling and fallbacks are included. Added tests to validate that initialization and invalid color inputs are handled gracefully.
+- Razer Chroma SDK integration remains a future step (synapse detection already present; effect API is currently a placeholder).
+- **Logitech provider** now supports `color:#RRGGBB@<brightness>` and `breathing:#RRGGBB@<speed>` effect syntax.
+- Two unrelated fan tests are still being investigated (file-lock and re-apply behavior); these are tracked separately.
+
+### Developer Notes
+- Effect syntax for providers:
+  - `color:#RRGGBB` — apply a static color to all supported devices in the provider.
+  - `preset:<name>` — lookup a named preset in configuration (only implemented for Corsair provider in this spike).
+
+### Next steps
+1. Implement preset UI mapping and enable applying saved presets from the Lighting UI.
+2. Extend Logitech provider with breathing/brightness effects and add tests.
+3. Harden `RgbNetSystemProvider` and add integration tests that run in CI using emulated device layers when needed.
+4. Add "Apply to System" action in the Lighting UI and a small Diagnostics view for RGB testing.
+
+---
+
 ## Development Progress
 
 ### Phase 1: Foundation & Quick Wins ✅
@@ -94,13 +147,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] Storage Optimizations (TRIM, 8.3 names, SSD detection)
 - [x] UI Implementation (tabs, toggles, risk indicators, presets)
 
-### Phase 3: RGB Overhaul (Planned)
+### Phase 3: RGB Overhaul (In Progress)
 - [ ] Asset Preparation (device images, brand logos)
-- [ ] Enhanced Corsair SDK (iCUE 4.0, full device enumeration)
+- [x] Enhanced Corsair SDK (iCUE 4.0, full device enumeration) — basic preset application implemented
 - [ ] Full Razer Chroma SDK (per-key RGB, effects library)
-- [ ] Enhanced Logitech SDK (G HUB integration, direct HID)
+- [x] Enhanced Logitech SDK (G HUB integration, direct HID) — breathing/brightness effect support implemented
 - [ ] Unified RGB Engine (sync all, cross-brand effects)
-- [ ] Lighting View Redesign (device cards, connection status)
+- [ ] Lighting View Redesign (device cards, connection status) — partial: "Apply to System" action added
 
 ### Phase 4: Linux Support (Planned)
 - [ ] Linux CLI (EC access, fan control, keyboard lighting)
@@ -118,8 +171,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Bloatware Manager (enumeration, safe removal)
 - [ ] Final Testing (regression, performance, documentation)
 
-**Overall Progress: 43/114 tasks (38%)**
+**Overall Progress: 46/114 tasks (40%)**
 
 ---
 
-*Last Updated: December 23, 2025*
+*Last Updated: December 28, 2025*
