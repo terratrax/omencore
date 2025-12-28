@@ -123,11 +123,10 @@
                                       DisplayMemberPath="Name"
                                       Margin="0,0,12,0"/>
                             
-                            <Button Grid.Column="2" 
-                                    Content="Apply" 
-                                    Style="{StaticResource ModernButton}"
-                                    Command="{Binding ApplyCorsairLightingCommand}"
-                                    Padding="16,8"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Apply" Style="{StaticResource ModernButton}" Command="{Binding ApplyCorsairLightingCommand}" Padding="16,8" Margin="0,0,8,0"/>
+                                <Button Content="Apply to System" Style="{StaticResource ModernButton}" Command="{Binding ApplyCorsairPresetToSystemCommand}" Padding="12,8"/>
+                            </StackPanel>
                         </Grid>
 
                         <!-- Custom RGB Color with Color Picker -->
@@ -224,6 +223,17 @@
                     <StackPanel>
                         <TextBlock Text="Logitech Devices" FontSize="20" FontWeight="SemiBold" 
                                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                        <!-- System RGB Section -->
+                        <Border Style="{StaticResource SurfaceCard}" Padding="12" Margin="0,12,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Apply color to all supported system RGB devices" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <controls:ColorPickerControl HexValue="{Binding SystemColorHex, Mode=TwoWay}" Width="220"/>
+                                    <Button Content="Apply to System" Style="{StaticResource ModernButton}" Command="{Binding ApplyToSystemCommand}" Padding="16,8" Margin="12,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                         
                         <!-- Device Discovery -->
                         <Grid Margin="0,0,0,16">

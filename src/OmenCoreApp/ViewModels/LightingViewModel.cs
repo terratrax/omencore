@@ -24,6 +24,7 @@ namespace OmenCore.ViewModels
         private readonly KeyboardLightingService? _keyboardLightingService;
         private readonly ConfigurationService? _configService;
         private readonly LoggingService _logging;
+        private readonly OmenCore.Services.Rgb.RgbManager? _rgbManager;
         
         private CorsairDevice? _selectedCorsairDevice;
         private CorsairLightingPreset? _selectedCorsairPreset;
@@ -49,6 +50,7 @@ namespace OmenCore.ViewModels
         public ReadOnlyObservableCollection<LogitechDevice> LogitechDevices => _logitechService.Devices;
         public ObservableCollection<CorsairLightingPreset> CorsairLightingPresets { get; } = new();
         public ObservableCollection<KeyboardPreset> KeyboardPresets { get; } = new();
+        public ICommand ApplyCorsairPresetToSystemCommand { get; }
         
         // Razer properties
         private ObservableCollection<RazerDevice> _razerDevices = new();
@@ -267,6 +269,7 @@ namespace OmenCore.ViewModels
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(SelectedCorsairLightingPreset));
                     (ApplyCorsairLightingCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+                    (ApplyCorsairPresetToSystemCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -393,6 +396,29 @@ namespace OmenCore.ViewModels
 
         public ObservableCollection<MacroProfile> MacroProfiles { get; } = new();
 
+        // System RGB
+        private string _systemColorHex = "#FF0000";
+        public string SystemColorHex
+        {
+            get => _systemColorHex;
+            set
+            {
+                if (_systemColorHex != value)
+                {
+                    _systemColorHex = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ICommand ApplyToSystemCommand { get; }
+
+        private async Task ApplyColorToSystemAsync()
+        {
+            if (_rgbManager == null) return;
+            await _rgbManager.ApplyEffectToAllAsync($"color:{SystemColorHex}");
+        }
+
         public string CorsairDeviceStatusText => $"{CorsairDevices.Count} device(s) detected";
         public string LogitechDeviceStatusText => $"{LogitechDevices.Count} device(s) detected";
         public bool HasCorsairMouse => CorsairDevices.Any(d => d.DeviceType == CorsairDeviceType.Mouse);
@@ -422,7 +448,7 @@ namespace OmenCore.ViewModels
         public ICommand SetZone3ColorCommand { get; }
         public ICommand SetZone4ColorCommand { get; }
 
-        public LightingViewModel(CorsairDeviceService corsairService, LogitechDeviceService logitechService, LoggingService logging, KeyboardLightingService? keyboardLightingService = null, ConfigurationService? configService = null, RazerService? razerService = null)
+        public LightingViewModel(CorsairDeviceService corsairService, LogitechDeviceService logitechService, LoggingService logging, KeyboardLightingService? keyboardLightingService = null, ConfigurationService? configService = null, RazerService? razerService = null, OmenCore.Services.Rgb.RgbManager? rgbManager = null)
         {
             _corsairService = corsairService;
             _logitechService = logitechService;
@@ -430,6 +456,7 @@ namespace OmenCore.ViewModels
             _keyboardLightingService = keyboardLightingService;
             _configService = configService;
             _logging = logging;
+            _rgbManager = rgbManager;
             
             // Load saved keyboard colors from config
             LoadKeyboardColorsFromConfig();
@@ -439,6 +466,7 @@ namespace OmenCore.ViewModels
             ApplyCorsairLightingCommand = new AsyncRelayCommand(async _ => await ApplyCorsairLightingAsync(), _ => SelectedCorsairPreset != null);
             ApplyCorsairCustomColorCommand = new AsyncRelayCommand(async _ => await ApplyCorsairCustomColorAsync());
             ApplyCorsairDpiCommand = new AsyncRelayCommand(async _ => await ApplyCorsairDpiAsync());
+            ApplyCorsairPresetToSystemCommand = new AsyncRelayCommand(async _ => await ApplyCorsairPresetToSystemAsync(), _ => SelectedCorsairPreset != null);
             
             DiscoverLogitechCommand = new AsyncRelayCommand(async _ => await _logitechService.DiscoverAsync());
             DiscoverLogitechDevicesCommand = new AsyncRelayCommand(async _ => await _logitechService.DiscoverAsync());
@@ -462,13 +490,25 @@ namespace OmenCore.ViewModels
             SetZone3ColorCommand = new RelayCommand(_ => OpenColorPickerForZone(3, "Right"));
             SetZone4ColorCommand = new RelayCommand(_ => OpenColorPickerForZone(4, "Far Right"));
 
-            // Initialize lighting presets
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Red", ColorHex = "#FF0000" });
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Green", ColorHex = "#00FF00" });
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Blue", ColorHex = "#0000FF" });
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Purple", ColorHex = "#9B30FF" });
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Cyan", ColorHex = "#00FFFF" });
-            CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "White", ColorHex = "#FFFFFF" });
+            // Initialize lighting presets - prefer saved config presets when available
+            if (_configService?.Config?.CorsairLightingPresets != null && _configService.Config.CorsairLightingPresets.Count > 0)
+            {
+                CorsairLightingPresets.Clear();
+                foreach (var preset in _configService.Config.CorsairLightingPresets)
+                {
+                    CorsairLightingPresets.Add(preset);
+                }
+            }
+            else
+            {
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Red", ColorHex = "#FF0000" });
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Green", ColorHex = "#00FF00" });
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Blue", ColorHex = "#0000FF" });
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Purple", ColorHex = "#9B30FF" });
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "Cyan", ColorHex = "#00FFFF" });
+                CorsairLightingPresets.Add(new CorsairLightingPreset { Name = "White", ColorHex = "#FFFFFF" });
+            }
+
             SelectedCorsairPreset = CorsairLightingPresets.FirstOrDefault();
             
             // Initialize keyboard presets
@@ -496,6 +536,10 @@ namespace OmenCore.ViewModels
             MacroProfiles.Add(new MacroProfile { Name = "Gaming" });
             MacroProfiles.Add(new MacroProfile { Name = "Productivity" });
             SelectedMacroProfile = MacroProfiles.FirstOrDefault();
+
+            // System RGB controls
+            SystemColorHex = "#FF0000";
+            ApplyToSystemCommand = new AsyncRelayCommand(async _ => await ApplyColorToSystemAsync());
         }
 
         private void OpenColorPickerForZone(int zoneNumber, string zoneName)
@@ -617,6 +661,17 @@ namespace OmenCore.ViewModels
                     _logging.Info($"Applied Corsair lighting preset: {SelectedCorsairPreset.Name}");
                 }, "Applying Corsair lighting...");
             }
+        }
+
+        private async Task ApplyCorsairPresetToSystemAsync()
+        {
+            if (SelectedCorsairPreset == null || _rgbManager == null) return;
+
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                await _rgbManager.ApplyEffectToAllAsync($"preset:{SelectedCorsairPreset.Name}");
+                _logging.Info($"Applied Corsair preset '{SelectedCorsairPreset.Name}' to system");
+            }, "Applying lighting preset to system...");
         }
 
         private async Task ApplyCorsairCustomColorAsync()
