@@ -35,6 +35,12 @@ namespace OmenCore.Models
         /// Default: false (iCUE fallback allowed).
         /// </summary>
         public bool CorsairDisableIcueFallback { get; set; } = false;
+
+        /// <summary>
+        /// Telemetry: anonymous, aggregated counts of PID successes/failures for HID writes.
+        /// Opt-in only; default is false.
+        /// </summary>
+        public bool TelemetryEnabled { get; set; } = false;
         
         /// <summary>
         /// Enable detailed diagnostics logging at startup (OGH commands, WMI status, etc.)

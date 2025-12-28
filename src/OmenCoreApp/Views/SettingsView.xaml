@@ -280,6 +280,44 @@
                                           Style="{StaticResource ModernToggleButton}"
                                           IsChecked="{Binding TrayTempDisplayEnabled}"/>
                         </Grid>
+
+                        <!-- Corsair HID-only mode (Disable iCUE fallback) -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Corsair: Disable iCUE fallback (HID-only mode)" FontSize="14" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Use direct HID access for Corsair devices. May not work for all devices; restart required." FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="1" 
+                                          Style="{StaticResource ModernToggleButton}"
+                                          IsChecked="{Binding CorsairDisableIcueFallback, Mode=TwoWay}"/>
+                        </Grid>
+
+                        <TextBlock Text="Warning: HID-only mode may reduce compatibility with some Corsair devices. If lighting control stops working, re-enable iCUE fallback or install iCUE." 
+                                   FontSize="12" Foreground="#FFB74D" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding CorsairDisableIcueFallback, Converter={StaticResource BoolToVisibility}}"/>
+
+                        <!-- Telemetry opt-in -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Enable anonymous lighting telemetry" FontSize="14" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Share anonymous, aggregated counts of Corsair PID success/failure to help us improve device coverage. No device-identifying data is collected." FontSize="12" 
+                                           Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="1" 
+                                          Style="{StaticResource ModernToggleButton}"
+                                          IsChecked="{Binding TelemetryEnabled, Mode=TwoWay}"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

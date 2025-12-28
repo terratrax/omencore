@@ -105,9 +105,12 @@ namespace OmenCore.Services.Corsair
             { 0x0A3E, ("Lighting Node PRO", CorsairDeviceType.Accessory, null) },
         };
 
-        public CorsairHidDirect(LoggingService logging)
+        private readonly TelemetryService? _telemetry;
+
+        public CorsairHidDirect(LoggingService logging, TelemetryService? telemetry = null)
         {
             _logging = logging;
+            _telemetry = telemetry;
         }
 
         public async Task<bool> InitializeAsync()
@@ -330,17 +333,7 @@ namespace OmenCore.Services.Corsair
         protected virtual async Task SendColorCommandAsync(CorsairHidDevice device, byte r, byte g, byte b)
         {
             // Choose a best-effort report format based on device type/product
-            byte setCmd = 0x07;
-            byte commitCmd = 0x07;
-
-            // Heuristics: some mice/boards might use different command codes (experimental)
-            if (device.DeviceInfo.DeviceType == CorsairDeviceType.Mouse)
-            {
-                // Some mice use 0x05 for set color (observed in older PIDs)
-                setCmd = 0x05;
-                commitCmd = 0x05;
-            }
-
+            // Command selection is handled in BuildSetColorReport/BuildCommitReport
             var deviceKey = $"{device.ProductId}";
 
             for (int attempt = 1; attempt <= HID_WRITE_MAX_ATTEMPTS; attempt++)
@@ -362,6 +355,9 @@ namespace OmenCore.Services.Corsair
                     if (_hidWriteFailedDevices.Contains(deviceKey))
                         _hidWriteFailedDevices.Remove(deviceKey);
 
+                    // Telemetry: record per-PID success if enabled
+                    try { _telemetry?.IncrementPidSuccess(device.ProductId); } catch { }
+
                     _logging.Info($"Applied lighting {r:X2}{g:X2}{b:X2} to {device.DeviceInfo.Name} via direct HID (attempt {attempt})");
                     return;
                 }
@@ -376,12 +372,9 @@ namespace OmenCore.Services.Corsair
                         {
                             _hidWriteFailedDevices.Add(deviceKey);
                             _logging.Warn($"HID write not supported for device {device.ProductId:X4} - falling back to SDK if available");
-                        }
-                    }
-                }
-            }
-        }
 
+                            // Telemetry: record failure for PID (opt-in only)
+                            try { _telemetry?.IncrementPidFailure(device.ProductId); } catch { }
         /// <summary>
         /// Build set-color report bytes for a device using product-specific heuristics.
         /// Separated for testability and easier per-product payload maintenance.
@@ -397,7 +390,6 @@ namespace OmenCore.Services.Corsair
             if (device.DeviceInfo != null && device.DeviceInfo.DeviceType == CorsairDeviceType.Keyboard)
             {
                 // Keyboard families tend to use command 0x09 and support a 'full-device' write
-                cmd = 0x09;
                 count = 0xFF;
             }
             else
@@ -408,8 +400,7 @@ namespace OmenCore.Services.Corsair
                     case 0x1B2E: // Dark Core RGB
                     case 0x1B4B: // Dark Core RGB PRO
                     case 0x1B34: // Ironclaw
-                        cmd = 0x05;
-                        break;
+                        return BuildSetColorReport(device, r, g, b); // mouse-specific simple path
                     default:
                         // Keep defaults
                         break;

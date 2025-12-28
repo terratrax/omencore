@@ -611,6 +611,41 @@ namespace OmenCore.ViewModels
             }
         }
 
+        /// <summary>
+        /// When true, OmenCore will attempt direct HID access for Corsair devices
+        /// and will *not* fall back to iCUE. This may improve iCUE-free operation
+        /// for some devices but can reduce compatibility on others.
+        /// </summary>
+        public bool CorsairDisableIcueFallback
+        {
+            get => _config.CorsairDisableIcueFallback;
+            set
+            {
+                if (_config.CorsairDisableIcueFallback != value)
+                {
+                    _config.CorsairDisableIcueFallback = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                    _logging.Info($"Corsair iCUE fallback {(value ? "disabled (HID-only mode)" : "enabled (iCUE fallback allowed)")}");
+                }
+            }
+        }
+
+        public bool TelemetryEnabled
+        {
+            get => _config.TelemetryEnabled;
+            set
+            {
+                if (_config.TelemetryEnabled != value)
+                {
+                    _config.TelemetryEnabled = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                    _logging.Info($"Telemetry {(value ? "enabled" : "disabled")} by user");
+                }
+            }
+        }
+
         public bool OmenKeyInterceptionEnabled
         {
             get => _config.Features?.OmenKeyInterceptionEnabled ?? false;

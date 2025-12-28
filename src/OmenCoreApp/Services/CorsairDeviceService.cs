@@ -44,7 +44,9 @@ namespace OmenCore.Services
             {
                 // Priority 1: Try direct HID access (no iCUE required)
                 logging.Info("Attempting Corsair direct HID access...");
-                sdk = new CorsairHidDirect(logging);
+                // Initialize telemetry for Corsair HID writes (shared instance)
+                var telemetry = new TelemetryService(logging, configService ?? new ConfigurationService());
+                sdk = new CorsairHidDirect(logging, telemetry);
                 var initialized = await sdk.InitializeAsync();
 
                 if (initialized)
