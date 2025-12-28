@@ -347,24 +347,14 @@ namespace OmenCore.Services.Corsair
             {
                 try
                 {
-                    var report = new byte[65];
-                    report[0] = 0x00; // Report ID
-                    report[1] = setCmd; // Set color command
-                    report[2] = 0x00; // Start index
-                    report[3] = 0x01; // LED count (1 for solid color)
-                    report[4] = r;
-                    report[5] = g;
-                    report[6] = b;
+                    var report = BuildSetColorReport(device, r, g, b);
 
                     var ok = await WriteReportAsync(device, report);
                     if (!ok)
                         throw new InvalidOperationException("HID write returned false");
 
                     // Commit/update
-                    var commitReport = new byte[65];
-                    commitReport[0] = 0x00;
-                    commitReport[1] = commitCmd; // Commit command
-                    commitReport[2] = 0x28; // Commit flag
+                    var commitReport = BuildCommitReport(device);
 
                     await WriteReportAsync(device, commitReport);
 
@@ -393,11 +383,100 @@ namespace OmenCore.Services.Corsair
         }
 
         /// <summary>
+        /// Build set-color report bytes for a device using product-specific heuristics.
+        /// Separated for testability and easier per-product payload maintenance.
+        /// </summary>
+        protected virtual byte[] BuildSetColorReport(CorsairHidDevice device, byte r, byte g, byte b)
+        {
+            // Default: 0x07 set color, index 0, count 1
+            byte cmd = 0x07;
+            byte startIndex = 0x00;
+            byte count = 0x01;
+
+            // Per-product overrides (keyboards use a different command observed on some PIDs)
+            switch (device.ProductId)
+            {
+                // K95, K70 series, K100 - prefer keyboard command 0x09
+                case 0x1B2D: // K95 RGB Platinum
+                case 0x1B11: // K70 RGB
+                case 0x1B17: // K70 RGB MK.2
+                case 0x1B60: // K100 RGB
+                    cmd = 0x09;
+                    // For keyboards, send a 'full' indicator in count to suggest whole-device write
+                    count = 0xFF;
+                    break;
+
+                // Mice often use 0x05 for the set color command
+                case 0x1B2E: // Dark Core RGB
+                case 0x1B4B: // Dark Core RGB PRO
+                case 0x1B34: // Ironclaw
+                    cmd = 0x05;
+                    break;
+
+                default:
+                    // Keep defaults
+                    break;
+            }
+
+            var report = new byte[65];
+            report[0] = 0x00;
+            report[1] = cmd;
+            report[2] = startIndex;
+            report[3] = count;
+            report[4] = r;
+            report[5] = g;
+            report[6] = b;
+            return report;
+        }
+
+        /// <summary>
+        /// Build a commit/update report for device specific commit command heuristics.
+        /// </summary>
+        protected virtual byte[] BuildCommitReport(CorsairHidDevice device)
+        {
+            var report = new byte[65];
+            report[0] = 0x00;
+
+            // Default commit is 0x07 with flag 0x28
+            byte commitCmd = 0x07;
+
+            // For some keyboard PIDs, a different commit command may be required (use same as setCmd for safety)
+            switch (device.ProductId)
+            {
+                case 0x1B2D:
+                case 0x1B11:
+                case 0x1B17:
+                case 0x1B60:
+                    commitCmd = 0x09;
+                    break;
+                case 0x1B2E:
+                case 0x1B4B:
+                case 0x1B34:
+                    commitCmd = 0x05;
+                    break;
+                default:
+                    commitCmd = 0x07;
+                    break;
+            }
+
+            report[1] = commitCmd;
+            report[2] = 0x28;
+            return report;
+        }
+
+        /// <summary>
         /// Low-level HID write. Overridable for testing to simulate write failures.
         /// Returns true when write succeeded.
         /// </summary>
         protected virtual async Task<bool> WriteReportAsync(CorsairHidDevice device, byte[] report)
         {
+            // Null hiddevice is allowed for tests that override and avoid using HidSharp streams
+            if (device.HidDevice == null)
+            {
+                // In test scenarios where HidDevice is null, assume write is not supported here; test overrides this method
+                throw new System.InvalidOperationException("No HidDevice available for write");
+            }
+
             using var stream = device.HidDevice.Open();
             await stream.WriteAsync(report, 0, report.Length);
             return true;
