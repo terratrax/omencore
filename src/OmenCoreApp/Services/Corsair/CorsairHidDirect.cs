@@ -396,13 +396,13 @@ namespace OmenCore.Services.Corsair
             // Per-product overrides (keyboards use a different command observed on some PIDs)
             switch (device.ProductId)
             {
-                // K95, K70 series, K100 - prefer keyboard command 0x09
+                // K95, K70 series, K100 - prefer keyboard command 0x09 and request full-device write
                 case 0x1B2D: // K95 RGB Platinum
                 case 0x1B11: // K70 RGB
                 case 0x1B17: // K70 RGB MK.2
                 case 0x1B60: // K100 RGB
                     cmd = 0x09;
-                    // For keyboards, send a 'full' indicator in count to suggest whole-device write
+                    // For keyboards, request a full-device write; we'll build a keyboard-specific report
                     count = 0xFF;
                     break;
 
@@ -418,6 +418,12 @@ namespace OmenCore.Services.Corsair
                     break;
             }
 
+            // If keyboard full-device indicator requested, build keyboard full-zone report
+            if (count == 0xFF)
+            {
+                return BuildKeyboardFullZoneReport(device, r, g, b);
+            }
+
             var report = new byte[65];
             report[0] = 0x00;
             report[1] = cmd;
@@ -426,6 +432,40 @@ namespace OmenCore.Services.Corsair
             report[4] = r;
             report[5] = g;
             report[6] = b;
+            return report;
+        }
+
+        /// <summary>
+        /// Build a keyboard full-zone report for keyboards that accept a full-device write.
+        /// Packs the requested color into both the base payload and an explicit per-zone area for clarity.
+        /// </summary>
+        protected virtual byte[] BuildKeyboardFullZoneReport(CorsairHidDevice device, byte r, byte g, byte b)
+        {
+            var report = new byte[65];
+            report[0] = 0x00;
+            report[1] = 0x09; // keyboard set command
+            report[2] = 0x00;
+            report[3] = 0xFF; // full-device marker
+
+            // Primary color in base slots
+            report[4] = r;
+            report[5] = g;
+            report[6] = b;
+
+            // Marker indicating full-zone payload follows (vendor heuristic)
+            // Use different marker for K100 for future per-key extensions
+            if (device.ProductId == 0x1B60)
+                report[7] = 0x02; // K100 special
+            else
+                report[7] = 0x01; // standard full-zone
+
+            // Populate first zone payload (Zone0) with the same color
+            report[8] = r; report[9] = g; report[10] = b;
+
+            // Duplicate for additional zones (safety/flexibility)
+            report[11] = r; report[12] = g; report[13] = b;
+            report[14] = r; report[15] = g; report[16] = b;
+
             return report;
         }
 

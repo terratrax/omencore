@@ -85,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **🌈 Logitech provider: Brightness & Breathing** - `color:#RRGGBB@<brightness>` and `breathing:#RRGGBB@<speed>` syntax supported; unit tests added.
 - **🔬 System RGB provider (experimental)** - `RgbNetSystemProvider` uses RGB.NET to apply static colors across supported desktop devices.
 - **📌 Apply to System** - Lighting UI now exposes an "Apply to System" action to apply the selected color across available providers.
+- **🔧 Keyboard full-zone HID writes** - Added full-device HID write payload support for Corsair keyboards (K70/K95/K100) so many keyboards can be controlled without iCUE.
 
 ### Changed
 - **🧭 Startup behavior** - `MainViewModel` initializes `RgbManager` and registers providers so lighting actions are available earlier in startup.

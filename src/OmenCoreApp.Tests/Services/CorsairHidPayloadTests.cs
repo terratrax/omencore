@@ -58,5 +58,28 @@ namespace OmenCoreApp.Tests.Services
             report[5].Should().Be(0x22);
             report[6].Should().Be(0x33);
         }
+
+        [Theory]
+        [InlineData(0x1B11)] // K70
+        [InlineData(0x1B2D)] // K95
+        [InlineData(0x1B60)] // K100
+        public void BuildSetColorReport_KeyboardsProduceFullZone(int pid)
+        {
+            var log = new LoggingService();
+            var t = new TestCorsairHidDirect(log);
+
+            var report = t.CallBuildSetColorReport(pid, 0x11, 0x22, 0x33);
+
+            // Full-device marker
+            report[3].Should().Be(0xFF);
+            // Marker: 0x01 for regular keyboards, 0x02 for K100 special
+            var expectedMarker = pid == 0x1B60 ? (byte)0x02 : (byte)0x01;
+            report[7].Should().Be(expectedMarker);
+
+            // Zone payload should carry the same color
+            report[8].Should().Be(0x11);
+            report[9].Should().Be(0x22);
+            report[10].Should().Be(0x33);
+        }
     }
 }
