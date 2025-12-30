@@ -5,6 +5,7 @@ using Xunit;
 
 namespace OmenCoreApp.Tests.Services
 {
+    [Collection("Config Isolation")]
     public class TelemetryServiceTests : IDisposable
     {
         private readonly string _tempDir;
@@ -43,12 +44,12 @@ namespace OmenCoreApp.Tests.Services
             cfg.Config.TelemetryEnabled = true;
             telemetry.IncrementPidSuccess(0x1B2E);
             var stats = telemetry.GetStats();
-            stats.Should().ContainKey("6966"); // decimal of 0x1B2E
-            stats["6966"].Success.Should().BeGreaterThan(0);
+            stats.Should().ContainKey("6958"); // decimal of 0x1B2E
+            stats["6958"].Success.Should().BeGreaterThan(0);
 
             telemetry.IncrementPidFailure(0x1B2E);
             stats = telemetry.GetStats();
-            stats["6966"].Failure.Should().BeGreaterThan(0);
+            stats["6958"].Failure.Should().BeGreaterThan(0);
         }
     }
 }

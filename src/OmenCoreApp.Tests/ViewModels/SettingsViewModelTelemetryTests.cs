@@ -6,6 +6,7 @@ using Xunit;
 
 namespace OmenCoreApp.Tests.ViewModels
 {
+    [Collection("Config Isolation")]
     public class SettingsViewModelTelemetryTests : IDisposable
     {
         private readonly string _tempDir;
