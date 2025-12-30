@@ -428,6 +428,7 @@ namespace OmenCore.ViewModels
         public ICommand ApplyCorsairLightingCommand { get; }
         public ICommand ApplyCorsairCustomColorCommand { get; }
         public ICommand ApplyCorsairDpiCommand { get; }
+        public ICommand RestoreCorsairDpiCommand { get; }
         public ICommand DiscoverLogitechCommand { get; }
         public ICommand ApplyLogitechColorCommand { get; }
         public ICommand DiscoverCorsairDevicesCommand { get; }
@@ -466,6 +467,7 @@ namespace OmenCore.ViewModels
             ApplyCorsairLightingCommand = new AsyncRelayCommand(async _ => await ApplyCorsairLightingAsync(), _ => SelectedCorsairPreset != null);
             ApplyCorsairCustomColorCommand = new AsyncRelayCommand(async _ => await ApplyCorsairCustomColorAsync());
             ApplyCorsairDpiCommand = new AsyncRelayCommand(async _ => await ApplyCorsairDpiAsync());
+            RestoreCorsairDpiCommand = new AsyncRelayCommand(async _ => await RestoreCorsairDpiAsync());
             ApplyCorsairPresetToSystemCommand = new AsyncRelayCommand(async _ => await ApplyCorsairPresetToSystemAsync(), _ => SelectedCorsairPreset != null);
             
             DiscoverLogitechCommand = new AsyncRelayCommand(async _ => await _logitechService.DiscoverAsync());
@@ -683,18 +685,65 @@ namespace OmenCore.ViewModels
             }, "Applying custom color...");
         }
 
-        private async Task ApplyCorsairDpiAsync()
+        private async Task ApplyCorsairDpiAsync(bool skipConfirmation = false)
         {
+            if (SelectedCorsairDevice == null)
+            {
+                _logging.Warn("No Corsair device selected for DPI apply");
+                return;
+            }
+
+            if (!skipConfirmation)
+            {
+                var res = MessageBox.Show(
+                    "This will change the hardware DPI settings on the selected device. Do you want to continue?",
+                    "Confirm DPI Change",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No);
+
+                if (res != MessageBoxResult.Yes)
+                {
+                    _logging.Info("User cancelled DPI apply");
+                    return;
+                }
+            }
+
             await ExecuteWithLoadingAsync(async () =>
             {
+                // Log the intended stages
                 foreach (var stage in CorsairDpiStages)
                 {
-                    _logging.Info($"DPI Stage {stage.Name}: {stage.Dpi} DPI");
+                    _logging.Info($"Applying DPI Stage {stage.Name}: {stage.Dpi} DPI");
                 }
-                // Note: RGB.NET doesn't support DPI control - would need CUE SDK integration
-                _logging.Warn("DPI control not yet implemented - RGB.NET doesn't support this feature");
+
+                try
+                {
+                    await _corsairService.ApplyDpiStagesAsync(SelectedCorsairDevice, CorsairDpiStages);
+
+                    // Update the device model to reflect the new DPI values
+                    SelectedCorsairDevice.DpiStages.Clear();
+                    foreach (var s in CorsairDpiStages)
+                    {
+                        SelectedCorsairDevice.DpiStages.Add(new CorsairDpiStage { Name = s.Name, Dpi = s.Dpi, IsDefault = s.IsDefault, AngleSnapping = s.AngleSnapping, LiftOffDistanceMm = s.LiftOffDistanceMm, Index = s.Index });
+                    }
+
+                    // Optionally persist as defaults
+                    if (_configService != null)
+                    {
+                        _configService.Config.DefaultCorsairDpi = CorsairDpiStages.Select(s => new CorsairDpiStage { Name = s.Name, Dpi = s.Dpi, IsDefault = s.IsDefault, AngleSnapping = s.AngleSnapping, LiftOffDistanceMm = s.LiftOffDistanceMm, Index = s.Index }).ToList();
+                        _configService.Save(_configService.Config);
+                    }
+
+                    _logging.Info("DPI settings applied successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logging.Error("Failed to apply DPI settings", ex);
+                }
+
                 await Task.CompletedTask;
-            }, "Configuring DPI...");
+            }, "Applying DPI settings...");
         }
 
         private async Task ApplyLogitechColorAsync()
@@ -706,6 +755,43 @@ namespace OmenCore.ViewModels
                     await _logitechService.ApplyStaticColorAsync(SelectedLogitechDevice, LogitechColorHex, LogitechBrightness);
                 }, "Applying Logitech lighting...");
             }
+        }
+
+        private async Task RestoreCorsairDpiAsync(bool skipConfirmation = false)
+        {
+            if (!skipConfirmation)
+            {
+                var res = MessageBox.Show(
+                    "This will restore DPI stages to their saved defaults (or built-in defaults if none). Continue?",
+                    "Restore DPI Defaults",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question,
+                    MessageBoxResult.No);
+                if (res != MessageBoxResult.Yes)
+                {
+                    _logging.Info("User cancelled DPI restore");
+                    return;
+                }
+            }
+
+            // Use config defaults if present
+            if (_configService?.Config?.DefaultCorsairDpi != null && _configService.Config.DefaultCorsairDpi.Count > 0)
+            {
+                CorsairDpiStages.Clear();
+                foreach (var s in _configService.Config.DefaultCorsairDpi)
+                {
+                    CorsairDpiStages.Add(new CorsairDpiStage { Name = s.Name, Dpi = s.Dpi, IsDefault = s.IsDefault, AngleSnapping = s.AngleSnapping, LiftOffDistanceMm = s.LiftOffDistanceMm, Index = s.Index });
+                }
+                _logging.Info("Restored DPI stages from config defaults");
+                return;
+            }
+
+            // Fallback built-in defaults
+            CorsairDpiStages.Clear();
+            CorsairDpiStages.Add(new CorsairDpiStage { Name = "Stage 1", Dpi = 800, IsDefault = true, Index = 0 });
+            CorsairDpiStages.Add(new CorsairDpiStage { Name = "Stage 2", Dpi = 1600, Index = 1 });
+            CorsairDpiStages.Add(new CorsairDpiStage { Name = "Stage 3", Dpi = 3200, Index = 2 });
+            _logging.Info("Restored built-in DPI defaults");
         }
 
         private async Task LoadMacroProfileAsync()
