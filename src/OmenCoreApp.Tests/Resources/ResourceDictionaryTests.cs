@@ -12,7 +12,8 @@ namespace OmenCoreApp.Tests.Resources
         {
             // Find repository root by walking up until a 'src' directory is found
             var dir = AppContext.BaseDirectory ?? throw new Exception("AppContext.BaseDirectory is null");
-            DirectoryInfo di = new DirectoryInfo(dir);
+#pragma warning disable CS8600 // Repo root discovery uses runtime checks for nulls in test environment
+            DirectoryInfo di = new DirectoryInfo(dir!);
             DirectoryInfo? repoRoot = null;
             while (di != null)
             {
@@ -28,6 +29,7 @@ namespace OmenCoreApp.Tests.Resources
 
             var rootPath = repoRoot.FullName;
             var path = Path.Combine(rootPath, "src", "OmenCoreApp", "Styles", "ModernStyles.xaml");
+#pragma warning restore CS8600
             Assert.True(File.Exists(path), $"Expected resource file not found: {path}");
 
             var content = File.ReadAllText(path);
