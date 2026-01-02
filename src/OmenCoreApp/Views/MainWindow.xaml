@@ -17,7 +17,14 @@
         ResizeMode="CanResizeWithGrip"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
-        TextOptions.TextFormattingMode="Display">
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="OmenCore Gaming Laptop Control Center">
+    
+    <!-- Keyboard Shortcuts for refresh -->
+    <Window.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding CheckForUpdatesCommand}" />
+    </Window.InputBindings>
+    
     <!-- DataContext will be set via dependency injection in code-behind -->
     
     <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="12">
@@ -393,6 +400,11 @@
                 <!-- System Optimizer Tab - Windows Gaming Tweaks -->
                 <TabItem Header="Optimizer">
                     <views:SystemOptimizerView DataContext="{Binding SystemOptimizer}" />
+                </TabItem>
+                
+                <!-- Bloatware Manager Tab -->
+                <TabItem Header="Bloatware">
+                    <views:BloatwareManagerView DataContext="{Binding BloatwareManager}" />
                 </TabItem>
                 
                 <!-- Peripherals Tab with Lighting View -->

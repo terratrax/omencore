@@ -607,9 +607,16 @@ namespace OmenCore.ViewModels
 
         public async void Toggle()
         {
-            if (OnToggleAsync != null)
+            try
             {
-                await OnToggleAsync(this);
+                if (OnToggleAsync != null)
+                {
+                    await OnToggleAsync(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Toggle failed: {ex.Message}");
             }
         }
     }

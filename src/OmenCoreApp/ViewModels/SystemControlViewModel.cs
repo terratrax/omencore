@@ -365,6 +365,166 @@ namespace OmenCore.ViewModels
         };
         
         public ObservableCollection<string> GpuPowerBoostLevels { get; } = new() { "Minimum", "Medium", "Maximum", "Extended" };
+
+        // GPU Overclocking (NVAPI)
+        private int _gpuCoreClockOffset;
+        public int GpuCoreClockOffset
+        {
+            get => _gpuCoreClockOffset;
+            set
+            {
+                if (_gpuCoreClockOffset != value)
+                {
+                    _gpuCoreClockOffset = Math.Clamp(value, GpuCoreOffsetMin, GpuCoreOffsetMax);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(GpuCoreClockOffsetText));
+                }
+            }
+        }
+
+        public string GpuCoreClockOffsetText => GpuCoreClockOffset >= 0 ? $"+{GpuCoreClockOffset} MHz" : $"{GpuCoreClockOffset} MHz";
+
+        private int _gpuMemoryClockOffset;
+        public int GpuMemoryClockOffset
+        {
+            get => _gpuMemoryClockOffset;
+            set
+            {
+                if (_gpuMemoryClockOffset != value)
+                {
+                    _gpuMemoryClockOffset = Math.Clamp(value, GpuMemoryOffsetMin, GpuMemoryOffsetMax);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(GpuMemoryClockOffsetText));
+                }
+            }
+        }
+
+        public string GpuMemoryClockOffsetText => GpuMemoryClockOffset >= 0 ? $"+{GpuMemoryClockOffset} MHz" : $"{GpuMemoryClockOffset} MHz";
+
+        private int _gpuPowerLimitPercent = 100;
+        public int GpuPowerLimitPercent
+        {
+            get => _gpuPowerLimitPercent;
+            set
+            {
+                if (_gpuPowerLimitPercent != value)
+                {
+                    _gpuPowerLimitPercent = Math.Clamp(value, GpuPowerLimitMin, GpuPowerLimitMax);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(GpuPowerLimitText));
+                }
+            }
+        }
+
+        public string GpuPowerLimitText => $"{GpuPowerLimitPercent}%";
+
+        private bool _gpuOcAvailable;
+        public bool GpuOcAvailable
+        {
+            get => _gpuOcAvailable;
+            private set
+            {
+                if (_gpuOcAvailable != value)
+                {
+                    _gpuOcAvailable = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _gpuOcStatus = "Not available";
+        public string GpuOcStatus
+        {
+            get => _gpuOcStatus;
+            private set
+            {
+                if (_gpuOcStatus != value)
+                {
+                    _gpuOcStatus = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // GPU OC limits (set by NvapiService based on GPU type)
+        public int GpuCoreOffsetMin { get; private set; } = -500;
+        public int GpuCoreOffsetMax { get; private set; } = 200;
+        public int GpuMemoryOffsetMin { get; private set; } = -500;
+        public int GpuMemoryOffsetMax { get; private set; } = 500;
+        public int GpuPowerLimitMin { get; private set; } = 50;
+        public int GpuPowerLimitMax { get; private set; } = 115;
+
+        // CPU Power Limits (PL1/PL2)
+        private int _cpuPl1Watts = 45;
+        public int CpuPl1Watts
+        {
+            get => _cpuPl1Watts;
+            set
+            {
+                if (_cpuPl1Watts != value)
+                {
+                    _cpuPl1Watts = Math.Clamp(value, CpuPl1Min, CpuPl1Max);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(CpuPl1Text));
+                }
+            }
+        }
+
+        public string CpuPl1Text => $"{CpuPl1Watts}W";
+
+        private int _cpuPl2Watts = 65;
+        public int CpuPl2Watts
+        {
+            get => _cpuPl2Watts;
+            set
+            {
+                if (_cpuPl2Watts != value)
+                {
+                    _cpuPl2Watts = Math.Clamp(value, CpuPl2Min, CpuPl2Max);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(CpuPl2Text));
+                }
+            }
+        }
+
+        public string CpuPl2Text => $"{CpuPl2Watts}W";
+
+        private bool _cpuPowerLimitsAvailable;
+        public bool CpuPowerLimitsAvailable
+        {
+            get => _cpuPowerLimitsAvailable;
+            private set
+            {
+                if (_cpuPowerLimitsAvailable != value)
+                {
+                    _cpuPowerLimitsAvailable = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _cpuPowerLimitsStatus = "Detecting...";
+        public string CpuPowerLimitsStatus
+        {
+            get => _cpuPowerLimitsStatus;
+            private set
+            {
+                if (_cpuPowerLimitsStatus != value)
+                {
+                    _cpuPowerLimitsStatus = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string CpuPl1Description => "Sustained power limit (PL1) - Long-term sustained TDP";
+        public string CpuPl2Description => "Burst power limit (PL2) - Short-term turbo boost power";
+
+        // CPU PL limits (vary by CPU model)
+        public int CpuPl1Min { get; private set; } = 15;
+        public int CpuPl1Max { get; private set; } = 65;
+        public int CpuPl2Min { get; private set; } = 25;
+        public int CpuPl2Max { get; private set; } = 115;
         
         // TCC Offset (CPU Temperature Limit)
         private TccOffsetStatus _tccStatus = TccOffsetStatus.CreateUnsupported();
@@ -1156,6 +1316,29 @@ The HP WMI BIOS interface exists but GPU power commands return empty results. " 
             if (mode != null && _selectedPerformanceMode != mode)
             {
                 _selectedPerformanceMode = mode;
+                OnPropertyChanged(nameof(SelectedPerformanceMode));
+                OnPropertyChanged(nameof(CurrentPerformanceModeName));
+                OnPropertyChanged(nameof(IsQuietMode));
+                OnPropertyChanged(nameof(IsBalancedMode));
+                OnPropertyChanged(nameof(IsPerformanceMode));
+            }
+        }
+        
+        /// <summary>
+        /// Select and apply a performance mode but don't save to config.
+        /// Used when restoring defaults after game exit - we apply balanced mode 
+        /// temporarily but preserve the user's saved preference for next startup.
+        /// </summary>
+        public void SelectPerformanceModeWithoutSave(string modeName)
+        {
+            var mode = PerformanceModes.FirstOrDefault(m => 
+                m.Name.Equals(modeName, StringComparison.OrdinalIgnoreCase));
+            if (mode != null)
+            {
+                _selectedPerformanceMode = mode;
+                _performanceModeService.Apply(mode);
+                _logging.Info($"Performance mode applied (temporary, not saved): {mode.Name}");
+                
                 OnPropertyChanged(nameof(SelectedPerformanceMode));
                 OnPropertyChanged(nameof(CurrentPerformanceModeName));
                 OnPropertyChanged(nameof(IsQuietMode));

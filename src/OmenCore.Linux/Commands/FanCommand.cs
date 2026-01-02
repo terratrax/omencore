@@ -10,6 +10,7 @@ namespace OmenCore.Linux.Commands;
 ///   omencore-cli fan --profile auto
 ///   omencore-cli fan --speed 80
 ///   omencore-cli fan --curve "40:20,50:30,60:50,80:80,90:100"
+///   omencore-cli fan --battery-aware    # Auto-adjusts profile based on power source
 /// </summary>
 public static class FanCommand
 {
@@ -41,6 +42,10 @@ public static class FanCommand
         var boostOption = new Option<bool?>(
             aliases: new[] { "--boost", "-b" },
             description: "Enable/disable fan boost mode");
+            
+        var batteryAwareOption = new Option<bool>(
+            aliases: new[] { "--battery-aware", "-B" },
+            description: "Auto-switch to quiet profile on battery power");
         
         command.AddOption(profileOption);
         command.AddOption(speedOption);
@@ -48,25 +53,24 @@ public static class FanCommand
         command.AddOption(fan1Option);
         command.AddOption(fan2Option);
         command.AddOption(boostOption);
+        command.AddOption(batteryAwareOption);
         
-        command.SetHandler(async (profile, speed, curve, fan1, fan2, boost) =>
+        command.SetHandler(async (profile, speed, curve, fan1, fan2, boost, batteryAware) =>
         {
-            await HandleFanCommandAsync(profile, speed, curve, fan1, fan2, boost);
-        }, profileOption, speedOption, curveOption, fan1Option, fan2Option, boostOption);
+            await HandleFanCommandAsync(profile, speed, curve, fan1, fan2, boost, batteryAware);
+        }, profileOption, speedOption, curveOption, fan1Option, fan2Option, boostOption, batteryAwareOption);
         
         return command;
     }
     
     private static async Task HandleFanCommandAsync(
         string? profile, int? speed, string? curve, 
-        int? fan1, int? fan2, bool? boost)
+        int? fan1, int? fan2, bool? boost, bool batteryAware)
     {
         // Check root
         if (!LinuxEcController.CheckRootAccess())
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: Root privileges required. Run with sudo.");
-            Console.ResetColor();
+            PrintError("Root privileges required. Run with sudo.");
             return;
         }
         
@@ -75,11 +79,22 @@ public static class FanCommand
         // Check EC access
         if (!ec.IsAvailable)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: Cannot access EC. Ensure ec_sys module is loaded with write_support=1");
-            Console.WriteLine("  sudo modprobe ec_sys write_support=1");
-            Console.ResetColor();
+            PrintError("Cannot access EC. Ensure ec_sys module is loaded with write_support=1");
+            PrintHint("sudo modprobe ec_sys write_support=1");
             return;
+        }
+        
+        // Handle battery-aware mode
+        if (batteryAware)
+        {
+            var isOnBattery = await IsOnBatteryAsync();
+            var batteryProfile = isOnBattery ? "silent" : (profile ?? "balanced");
+            
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"ℹ Battery-aware mode: {(isOnBattery ? "On Battery → Quiet" : "Plugged In → Normal")}");
+            Console.ResetColor();
+            
+            profile = batteryProfile;
         }
         
         // Handle profile
@@ -177,6 +192,46 @@ public static class FanCommand
         // No options - show current status
         ShowFanStatus(ec);
         await Task.CompletedTask;
+    }
+    
+    private static async Task<bool> IsOnBatteryAsync()
+    {
+        const string acPath = "/sys/class/power_supply/AC0/online";
+        const string acPathAlt = "/sys/class/power_supply/ACAD/online";
+        
+        try
+        {
+            string path = File.Exists(acPath) ? acPath : acPathAlt;
+            if (File.Exists(path))
+            {
+                var content = await File.ReadAllTextAsync(path);
+                return content.Trim() == "0";
+            }
+        }
+        catch { }
+        
+        return false; // Assume plugged in if can't detect
+    }
+    
+    private static void PrintSuccess(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"✓ {message}");
+        Console.ResetColor();
+    }
+    
+    private static void PrintError(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"✗ Error: {message}");
+        Console.ResetColor();
+    }
+    
+    private static void PrintHint(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine($"  Hint: {message}");
+        Console.ResetColor();
     }
     
     private static void ShowFanStatus(LinuxEcController ec)

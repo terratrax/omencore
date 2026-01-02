@@ -60,6 +60,8 @@ namespace OmenCore.Services
         /// <summary>
         /// Returns the currently active backend based on user preference and availability.
         /// User preference (PreferredKeyboardBackend) is respected if that backend is available.
+        /// In Auto mode: If ExperimentalEcKeyboardEnabled is true, prefer EC (user explicitly wants EC).
+        /// Otherwise: WMI BIOS > WMI > EC (if enabled) > None
         /// </summary>
         public string BackendType
         {
@@ -72,7 +74,15 @@ namespace OmenCore.Services
                 if (preference == "Wmi" && _wmiAvailable) return "WMI";
                 if (preference == "Ec" && _ecAvailable && IsExperimentalEcEnabled) return "EC";
                 
-                // Auto mode: WMI BIOS > WMI > EC (if enabled) > None
+                // Auto mode logic:
+                // If user has explicitly enabled EC keyboard (ExperimentalEcKeyboardEnabled),
+                // they want EC to be used - prefer it over WMI backends
+                if (preference == "Auto" && IsExperimentalEcEnabled && _ecAvailable)
+                {
+                    return "EC";
+                }
+                
+                // Standard auto: WMI BIOS > WMI > EC (if enabled) > None
                 if (_wmiBiosAvailable) return "WMI BIOS";
                 if (_wmiAvailable) return "WMI";
                 if (_ecAvailable && IsExperimentalEcEnabled) return "EC";

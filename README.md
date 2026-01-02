@@ -10,8 +10,9 @@ OmenCore is a **complete replacement** for HP OMEN Gaming Hub - no OGH services 
 - ✅ **No Telemetry** - Your data stays on your machine
 - ✅ **No Ads** - Clean, focused interface
 - ✅ **No Sign-In Required** - Full offline operation
+- 🐧 **Cross-Platform** - Windows GUI + Linux CLI & Avalonia GUI
 
-[![Version](https://img.shields.io/badge/version-2.0.0--beta-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v2.0.0-beta)
+[![Version](https://img.shields.io/badge/version-2.0.1--beta-blue.svg)](https://github.com/theantipopau/omencore/releases/tag/v2.0.1-beta)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Website](https://img.shields.io/badge/website-omencore.info-brightgreen.svg)](https://omencore.info)
@@ -19,6 +20,69 @@ OmenCore is a **complete replacement** for HP OMEN Gaming Hub - no OGH services 
 [![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C.svg?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=XH8CKYF8T7EBU&no_recurring=0&item_name=Thank+you+for+your+generous+donation%2C+this+will+allow+me+to+continue+developing+my+programs.&currency_code=AUD)
 
 ![OmenCore Screenshot](docs/screenshots/main-window.png)
+
+---
+
+## 🆕 What's New in v2.0.1-beta
+
+### 🐧 Linux Support (Experimental)
+
+#### Cross-Platform Avalonia GUI
+- **Full fan control** with visual curve editor
+- **Temperature monitoring** via hwmon/EC
+- **Performance profiles** (Quiet/Balanced/Performance)
+- **Keyboard RGB** color and brightness control
+- **Native look** with dark/light theme support
+- **Battery-aware fan profiles** - auto-quiet when on battery
+
+#### Linux CLI (`omencore-cli`)
+```bash
+# Fan control
+omencore-cli fan --profile auto|silent|gaming|max
+omencore-cli fan --speed 80
+omencore-cli fan --battery-aware    # Auto-adjust for power source
+
+# Battery management
+omencore-cli battery status
+omencore-cli battery profile quiet  # Set battery-specific profile
+omencore-cli battery threshold 80   # Stop charging at 80%
+
+# Keyboard RGB
+omencore-cli keyboard --color FF0000 --brightness 100
+
+# System monitoring
+omencore-cli status --json
+omencore-cli monitor --interval 500
+
+# Background daemon
+omencore-cli daemon --start
+```
+
+#### Supported Distros
+- Ubuntu 22.04/24.04 LTS
+- Fedora 38+
+- Arch Linux (AUR coming soon)
+- Pop!_OS 22.04+
+
+**Requirements:** `ec_sys` kernel module with `write_support=1`
+
+### 🗑️ Bloatware Manager
+New comprehensive bloatware management:
+- **AppX Package Scanner** - Detects HP, Xbox, social media bloatware
+- **Win32 App Detection** - Registry-based installed program scanning
+- **Startup Item Manager** - Control what runs at boot
+- **Scheduled Task Cleaner** - Find and disable telemetry tasks
+- **Risk Assessment** - Low/Medium/High indicators for safe removal
+- **Restore Function** - Can restore previously removed AppX packages
+
+### 🎨 UI/UX Polish
+- **Fixed duplicate converter warnings** in BoolToVisibilityConverter
+- **Enabled deferred scrolling** for smoother fan curve dragging
+- **Fixed async void issues** - Proper exception handling for commands
+- **Vector-based icons** - Replaced emoji with scalable geometries
+- **Improved text contrast** - Better readability in dark theme
+- **Accessibility improvements** - AutomationProperties for screen readers
+- **Keyboard shortcuts** - `Ctrl+1-6` for tab navigation
 
 ---
 
@@ -357,6 +421,19 @@ OmenCore includes a built-in **OGH Cleanup** tool (Settings tab):
 4. Deletes residual files from Program Files/AppData
 
 **After cleanup, OmenCore provides full fan control without OGH.**
+
+### ⚠️ Antivirus False Positives
+
+Windows Defender and other antivirus software may flag OmenCore as suspicious. This is a **false positive** caused by:
+- **Kernel drivers** (PawnIO, WinRing0) required for hardware access
+- **Low-level hardware control** similar to how some malware operates
+
+**OmenCore is safe and fully open-source.** To whitelist:
+
+1. **Windows Defender:** Settings → Virus & threat protection → Exclusions → Add `C:\Program Files\OmenCore`
+2. **Windows SmartScreen:** Click "More info" → "Run anyway" (installer is not EV code-signed)
+
+See [ANTIVIRUS_FAQ.md](docs/ANTIVIRUS_FAQ.md) for detailed instructions for all antivirus programs.
 
 ---
 

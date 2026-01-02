@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OmenCore.Avalonia.ViewModels"
+             x:Class="OmenCore.Avalonia.Views.SystemControlView"
+             x:DataType="vm:SystemControlViewModel">
+    
+    <ScrollViewer>
+        <StackPanel Spacing="16">
+            
+            <!-- Page Header -->
+            <TextBlock Classes="pageHeader" Text="System Control" />
+            <TextBlock Classes="label" Text="Performance modes, GPU switching, and keyboard lighting" Margin="0,-4,0,12" />
+            
+            <!-- Performance Mode -->
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="sectionHeader" Text="Performance Mode" />
+                    <TextBlock Classes="label" Text="Select a performance profile for your system" Margin="0,0,0,12" />
+                    
+                    <ComboBox ItemsSource="{Binding PerformanceModes}"
+                              SelectedIndex="{Binding SelectedPerformanceModeIndex}"
+                              IsEnabled="{Binding !IsPerformanceModeChanging}"
+                              MinWidth="200" />
+                    
+                    <ProgressBar IsIndeterminate="True" 
+                                 IsVisible="{Binding IsPerformanceModeChanging}"
+                                 Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+            
+            <!-- GPU Mode -->
+            <Border Classes="card" IsVisible="{Binding HasGpuMuxSwitch}">
+                <StackPanel>
+                    <TextBlock Classes="sectionHeader" Text="GPU Mode" />
+                    <TextBlock Classes="label" Text="Switch between hybrid and discrete GPU modes (requires reboot)" Margin="0,0,0,12" />
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="secondary" Content="Hybrid"
+                                Command="{Binding SetGpuModeCommand}" CommandParameter="hybrid"
+                                IsEnabled="{Binding !IsGpuModeChanging}" />
+                        <Button Classes="secondary" Content="Discrete Only"
+                                Command="{Binding SetGpuModeCommand}" CommandParameter="discrete"
+                                IsEnabled="{Binding !IsGpuModeChanging}" />
+                        <Button Classes="secondary" Content="Integrated Only"
+                                Command="{Binding SetGpuModeCommand}" CommandParameter="integrated"
+                                IsEnabled="{Binding !IsGpuModeChanging}" />
+                    </StackPanel>
+                    
+                    <Border Background="#1A1A1A" CornerRadius="4" Padding="12,8" Margin="0,12,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Current Mode:" Foreground="{StaticResource SecondaryTextBrush}" />
+                            <TextBlock Text="{Binding CurrentGpuMode}" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource OmenBlueBrush}" />
+                        </StackPanel>
+                    </Border>
+                    
+                    <ProgressBar IsIndeterminate="True" 
+                                 IsVisible="{Binding IsGpuModeChanging}"
+                                 Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+            
+            <!-- Keyboard Lighting -->
+            <Border Classes="card" IsVisible="{Binding HasKeyboardBacklight}">
+                <StackPanel>
+                    <TextBlock Classes="sectionHeader" Text="Keyboard Lighting" />
+                    <TextBlock Classes="label" Text="Adjust keyboard backlight brightness and color" Margin="0,0,0,12" />
+                    
+                    <!-- Brightness -->
+                    <StackPanel Margin="0,0,0,16">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Brightness:" Foreground="{StaticResource SecondaryTextBrush}" />
+                            <TextBlock Text="{Binding KeyboardBrightness, StringFormat={}{0}%}" />
+                        </StackPanel>
+                        <Slider Value="{Binding KeyboardBrightness}" 
+                                Minimum="0" Maximum="100"
+                                Margin="0,8,0,0" />
+                    </StackPanel>
+                    
+                    <!-- Color Presets -->
+                    <TextBlock Classes="label" Text="Color Presets" Margin="0,0,0,8" />
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="blue"
+                                Background="#00BFFF" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="red"
+                                Background="#E31837" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="green"
+                                Background="#39FF14" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="purple"
+                                Background="#9D4EDD" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="orange"
+                                Background="#FF6B35" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="cyan"
+                                Background="#00FFFF" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="yellow"
+                                Background="#FFFF00" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                        <Button Command="{Binding SetPresetColorCommand}" CommandParameter="white"
+                                Background="#FFFFFF" Width="40" Height="40" Margin="4" CornerRadius="4" />
+                    </WrapPanel>
+                    
+                    <!-- Custom Color (when RGB supported) -->
+                    <StackPanel IsVisible="{Binding HasFourZoneRgb}" Margin="0,16,0,0">
+                        <TextBlock Classes="label" Text="Custom Color (RGB)" Margin="0,0,0,8" />
+                        <Grid ColumnDefinitions="*,*,*,Auto">
+                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                <TextBlock Text="Red" Classes="label" />
+                                <NumericUpDown Value="{Binding KeyboardRed}" Minimum="0" Maximum="255" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="4,0">
+                                <TextBlock Text="Green" Classes="label" />
+                                <NumericUpDown Value="{Binding KeyboardGreen}" Minimum="0" Maximum="255" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="8,0">
+                                <TextBlock Text="Blue" Classes="label" />
+                                <NumericUpDown Value="{Binding KeyboardBlue}" Minimum="0" Maximum="255" />
+                            </StackPanel>
+                            <Button Grid.Column="3" Classes="primary" Content="Apply"
+                                    Command="{Binding ApplyKeyboardColorCommand}"
+                                    VerticalAlignment="Bottom" Margin="8,0,0,0" />
+                        </Grid>
+                        
+                        <!-- Color Preview - simplified -->
+                        <Border Margin="0,12,0,0" Height="40" CornerRadius="4"
+                                Background="{StaticResource OmenBlueBrush}" 
+                                Name="ColorPreviewBorder" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            
+            <!-- Status Message -->
+            <Border Background="#1A1A1A" CornerRadius="4" Padding="12,8" 
+                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding StatusMessage}" 
+                           Foreground="{StaticResource SecondaryTextBrush}" />
+            </Border>
+            
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -32,7 +32,7 @@ namespace OmenCore.Services
         private bool _disposed;
         private OmenKeyAction _currentAction = OmenKeyAction.ToggleOmenCore;
         private string _externalAppPath = string.Empty;
-        private DateTime _lastKeyPress = DateTime.MinValue;
+        private long _lastKeyPressTicks = 0; // Use ticks for thread-safe Interlocked operations
         private const int DebounceMs = 300;
         
         // WMI event watcher for HP BIOS events
@@ -305,13 +305,15 @@ namespace OmenCore.Services
                 
                 _logging.Info($"🔑 OMEN key detected via WMI ({className})");
                 
-                // Debounce to prevent double-triggers
-                if ((DateTime.Now - _lastKeyPress).TotalMilliseconds < DebounceMs)
+                // Debounce to prevent double-triggers (thread-safe)
+                var lastTicks = Interlocked.Read(ref _lastKeyPressTicks);
+                var timeSinceLastPress = (DateTime.UtcNow.Ticks - lastTicks) / TimeSpan.TicksPerMillisecond;
+                if (timeSinceLastPress < DebounceMs)
                 {
                     _logging.Debug("OMEN key debounced (too soon after last press)");
                     return;
                 }
-                _lastKeyPress = DateTime.Now;
+                Interlocked.Exchange(ref _lastKeyPressTicks, DateTime.UtcNow.Ticks);
                 
                 // Fire events on background thread to avoid blocking WMI
                 Task.Run(() =>
@@ -331,12 +333,23 @@ namespace OmenCore.Services
         /// </summary>
         public void StopInterception()
         {
-            // Stop WMI watcher
+            // Stop WMI watcher - unsubscribe event handler to prevent memory leak
             if (_wmiEventWatcher != null)
             {
-                _wmiEventWatcher.Stop();
-                _wmiEventWatcher.Dispose();
-                _wmiEventWatcher = null;
+                try
+                {
+                    _wmiEventWatcher.Stop();
+                    _wmiEventWatcher.EventArrived -= OnWmiEventArrived;
+                }
+                catch (Exception ex)
+                {
+                    _logging.Debug($"Error stopping WMI watcher: {ex.Message}");
+                }
+                finally
+                {
+                    _wmiEventWatcher.Dispose();
+                    _wmiEventWatcher = null;
+                }
             }
             
             if (_hookHandle != IntPtr.Zero)
@@ -378,12 +391,14 @@ namespace OmenCore.Services
                 {
                     if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
                     {
-                        // Debounce check
-                        if ((DateTime.Now - _lastKeyPress).TotalMilliseconds < DebounceMs)
+                        // Debounce check (thread-safe)
+                        var lastTicks = Interlocked.Read(ref _lastKeyPressTicks);
+                        var timeSinceLastPress = (DateTime.UtcNow.Ticks - lastTicks) / TimeSpan.TicksPerMillisecond;
+                        if (timeSinceLastPress < DebounceMs)
                         {
                             return new IntPtr(1); // Block duplicate
                         }
-                        _lastKeyPress = DateTime.Now;
+                        Interlocked.Exchange(ref _lastKeyPressTicks, DateTime.UtcNow.Ticks);
                         
                         _logging.Info($"🔑 OMEN key detected: VK=0x{hookStruct.vkCode:X2}, Scan=0x{hookStruct.scanCode:X4}");
                         

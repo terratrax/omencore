@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OmenCore.Avalonia.ViewModels"
+        xmlns:views="using:OmenCore.Avalonia.Views"
+        x:Class="OmenCore.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="OmenCore"
+        Width="1200" Height="800"
+        MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+    
+    <Grid ColumnDefinitions="220,*">
+        
+        <!-- Navigation Sidebar -->
+        <Border Grid.Column="0" Background="#141414" Padding="12">
+            <DockPanel>
+                <!-- Header -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,8,0,24">
+                    <TextBlock Text="OMENCORE" 
+                               FontSize="24" FontWeight="Bold" 
+                               Foreground="{StaticResource OmenBlueBrush}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding ModelName}" 
+                               FontSize="11"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               HorizontalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                
+                <!-- Status Indicator -->
+                <Border DockPanel.Dock="Bottom" 
+                        CornerRadius="4" Padding="8"
+                        Background="#1A1A1A" Margin="0,12,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                        <Ellipse Width="8" Height="8">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding IsConnected, Converter={x:Static views:MainWindow.BoolToColorConverter}}" />
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <TextBlock Text="{Binding StatusText}" 
+                                   FontSize="11"
+                                   Foreground="{StaticResource SecondaryTextBrush}" />
+                    </StackPanel>
+                </Border>
+                
+                <!-- Navigation Buttons -->
+                <StackPanel Spacing="4">
+                    <Button Classes="navButton" Command="{Binding NavigateToDashboardCommand}"
+                            Classes.active="{Binding CurrentPage, Converter={x:Static StringConverters.IsNotNullOrEmpty}, ConverterParameter=Dashboard}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="📊" FontSize="16" />
+                            <TextBlock Text="Dashboard" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Classes="navButton" Command="{Binding NavigateToFanControlCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="🌀" FontSize="16" />
+                            <TextBlock Text="Fan Control" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Classes="navButton" Command="{Binding NavigateToSystemControlCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="⚡" FontSize="16" />
+                            <TextBlock Text="System Control" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Classes="navButton" Command="{Binding NavigateToSettingsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="⚙️" FontSize="16" />
+                            <TextBlock Text="Settings" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        
+        <!-- Main Content Area -->
+        <Border Grid.Column="1" Background="{StaticResource DarkBackgroundBrush}" Padding="24">
+            <ContentControl Content="{Binding CurrentView}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                        <views:DashboardView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:FanControlViewModel}">
+                        <views:FanControlView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:SystemControlViewModel}">
+                        <views:SystemControlView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                        <views:SettingsView />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
+        </Border>
+    </Grid>
+</Window>

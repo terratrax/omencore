@@ -4,6 +4,7 @@ using OmenCore.Logitech;
 using OmenCore.Models;
 using OmenCore.Services;
 using OmenCore.Utils;
+using OmenCore.ViewModels;
 using OmenCore.Views;
 using System;
 using System.Collections.ObjectModel;
@@ -168,7 +169,7 @@ namespace OmenCore.ViewModels
             {
                 if (_settings == null)
                 {
-                    _settings = new SettingsViewModel(_logging, _configService, _systemInfoService, _fanCleaningService, _biosUpdateService, _omenKeyService, _osdService, _hardwareMonitoringService);
+                    _settings = new SettingsViewModel(_logging, _configService, _systemInfoService, _fanCleaningService, _biosUpdateService, _wmiBios, _omenKeyService, _osdService, _hardwareMonitoringService);
                     
                     // Subscribe to low overhead mode changes from Settings
                     _settings.LowOverheadModeChanged += (s, enabled) =>
@@ -231,6 +232,20 @@ namespace OmenCore.ViewModels
                     OnPropertyChanged(nameof(SystemOptimizer));
                 }
                 return _systemOptimizer;
+            }
+        }
+
+        private BloatwareManagerViewModel? _bloatwareManager;
+        public BloatwareManagerViewModel? BloatwareManager
+        {
+            get
+            {
+                if (_bloatwareManager == null)
+                {
+                    _bloatwareManager = new BloatwareManagerViewModel(_logging);
+                    OnPropertyChanged(nameof(BloatwareManager));
+                }
+                return _bloatwareManager;
             }
         }
         
@@ -458,8 +473,13 @@ namespace OmenCore.ViewModels
                 
                 _latestMonitoringSample = value;
                 
-                // Batch property notifications to reduce overhead
-                OnPropertyChanged(string.Empty); // Notifies all properties changed
+                // Notify only the specific properties that depend on monitoring data
+                OnPropertyChanged(nameof(LatestMonitoringSample));
+                OnPropertyChanged(nameof(CpuSummary));
+                OnPropertyChanged(nameof(GpuSummary));
+                OnPropertyChanged(nameof(MemorySummary));
+                OnPropertyChanged(nameof(StorageSummary));
+                OnPropertyChanged(nameof(CpuClockSummary));
             }
         }
         public bool MonitoringLowOverheadMode
@@ -1382,13 +1402,16 @@ namespace OmenCore.ViewModels
 
         private Task RestoreDefaultSettingsAsync()
         {
-            // Restore to balanced defaults
+            // Restore to balanced defaults (but don't save to config - these are temporary game-exit defaults)
+            // The user's saved preferences should be preserved for next restart
             if (FanControl != null)
             {
                 var balanced = FanControl.FanPresets.FirstOrDefault(p => p.Name == "Balanced");
                 if (balanced != null)
                 {
-                    FanControl.SelectedPreset = balanced;
+                    // Use SelectPresetByNameNoApply + manual apply to avoid saving to config
+                    FanControl.SelectPresetByNameNoApply("Balanced");
+                    _fanService?.ApplyAutoMode(); // Apply balanced/auto without saving
                 }
             }
 
@@ -1397,11 +1420,12 @@ namespace OmenCore.ViewModels
                 var balanced = SystemControl.PerformanceModes.FirstOrDefault(m => m.Name == "Balanced");
                 if (balanced != null)
                 {
-                    SystemControl.SelectedPerformanceMode = balanced;
+                    // Set UI without triggering save
+                    SystemControl.SelectPerformanceModeWithoutSave("Balanced");
                 }
             }
 
-            _logging.Info("✓ Restored default settings");
+            _logging.Info("✓ Restored default settings (temporary, not saved to config)");
             return Task.CompletedTask;
         }
 
@@ -2661,6 +2685,13 @@ namespace OmenCore.ViewModels
                 if (mainWindow == null)
                 {
                     _logging.Warn("Toggle window: MainWindow is null");
+                    return;
+                }
+                
+                // Suppress window activation during remote session changes (e.g., RDP)
+                if (App.ShouldSuppressWindowActivation)
+                {
+                    _logging.Debug("Toggle window suppressed (remote session state change)");
                     return;
                 }
                 

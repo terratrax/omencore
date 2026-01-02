@@ -128,6 +128,17 @@ namespace OmenCore.Hardware
         private void DetectModelFamily()
         {
             var model = Capabilities.ModelName?.ToUpperInvariant() ?? "";
+            var productId = Capabilities.ProductId?.ToUpperInvariant() ?? "";
+            
+            // First check for known HP Gaming Product IDs (for motherboard replacement cases)
+            // HP uses Product IDs like 8BCA, 8B2J, etc. for OMEN laptops
+            // These start with 8 for gaming laptops typically
+            bool isOmenByProductId = IsOmenProductId(productId);
+            
+            if (isOmenByProductId && !model.Contains("OMEN") && !model.Contains("VICTUS"))
+            {
+                _logging?.Info($"  Note: OMEN device detected via Product ID ({productId}) - motherboard may have been replaced");
+            }
             
             // OMEN Transcend models (newer ultrabook-style, may need OGH)
             if (model.Contains("TRANSCEND"))
@@ -153,15 +164,19 @@ namespace OmenCore.Hardware
                 return;
             }
             
+            // Check for OMEN models (by name or Product ID)
+            bool isOmen = model.Contains("OMEN") || model.Contains("THETIGER") || isOmenByProductId;
+            
             // Try to detect year from model for 2024+ detection
             // Models like "OMEN by HP 16-wf1xxx" where 1xxx suggests 2024+
-            if (model.Contains("OMEN"))
+            if (isOmen)
             {
                 // Look for OMEN 16/17 with year indicators
-                // wf0xxx = 2023, wf1xxx = 2024, etc.
-                if (model.Contains("-WF1") || model.Contains("-XF1") || 
+                // wf0xxx = 2023, wf1xxx = 2024, xf0xxx = 2024, etc.
+                if (model.Contains("-WF1") || model.Contains("-XF1") || model.Contains("-XF0") ||
                     model.Contains(" 14-") || // OMEN 14 is newer line
-                    model.Contains("2024"))
+                    model.Contains("2024") ||
+                    productId.StartsWith("8B"))  // 8Bxx Product IDs are typically 2023+ OMEN
                 {
                     Capabilities.ModelFamily = OmenModelFamily.OMEN2024Plus;
                     _logging?.Info($"  Model Family: OMEN 2024+ (may require OGH proxy for fan control)");
@@ -184,6 +199,7 @@ namespace OmenCore.Hardware
                 }
                 
                 // Generic OMEN without specific model number might be legacy
+                // Or motherboard replacement case - treat as standard OMEN
                 Capabilities.ModelFamily = OmenModelFamily.Legacy;
                 _logging?.Info($"  Model Family: OMEN (legacy/unknown generation)");
                 return;
@@ -191,6 +207,46 @@ namespace OmenCore.Hardware
             
             Capabilities.ModelFamily = OmenModelFamily.Unknown;
             _logging?.Info($"  Model Family: Unknown (non-OMEN device?)");
+        }
+        
+        /// <summary>
+        /// Check if a Product ID belongs to an OMEN/Gaming laptop.
+        /// HP uses specific product ID patterns for their gaming lines.
+        /// </summary>
+        private static bool IsOmenProductId(string productId)
+        {
+            if (string.IsNullOrEmpty(productId)) return false;
+            
+            // Known OMEN Product ID patterns:
+            // - 8Bxx: OMEN 16/17 2023-2024 models
+            // - 8Axx: OMEN 16/17 earlier models  
+            // - 88xx: Some OMEN 15 models
+            // - 8Cxx: Some newer OMEN variants
+            // The first character is typically '8' for gaming laptops
+            
+            // Specific known OMEN Product IDs (add more as discovered)
+            var knownOmenIds = new[]
+            {
+                "8BCA", "8B2J", "8B2K", "8B2L", "8B2M",  // OMEN 16 xf series
+                "8B9D", "8B9E", "8B9F",                   // OMEN 17 variants
+                "88D9", "88DA", "88DB",                   // OMEN 15 variants
+                "8A12", "8A13", "8A14",                   // OMEN 16 wf series
+                "8C3A", "8C3B", "8C3C",                   // Newer OMEN variants
+            };
+            
+            // Check exact match first
+            if (knownOmenIds.Contains(productId.ToUpperInvariant()))
+                return true;
+            
+            // Pattern matching: 8Bxx, 8Axx, 88xx, 8Cxx are typically gaming
+            if (productId.Length >= 2)
+            {
+                var prefix = productId.Substring(0, 2).ToUpperInvariant();
+                if (prefix == "8B" || prefix == "8A" || prefix == "88" || prefix == "8C")
+                    return true;
+            }
+            
+            return false;
         }
         
         private void DetectChassisType()

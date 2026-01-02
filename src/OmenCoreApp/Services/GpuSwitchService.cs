@@ -45,8 +45,14 @@ namespace OmenCore.Services
                     return;
                 }
                 
-                // Only allow on OMEN models - Transcend, Victus, etc. may not have proper support
-                if (!model.Contains("OMEN", StringComparison.OrdinalIgnoreCase))
+                // Allow on OMEN models - also check for HP codenames used on replacement motherboards
+                var modelUpper = model.ToUpperInvariant();
+                bool isOmenModel = modelUpper.Contains("OMEN") || 
+                                   modelUpper.Contains("THETIGER") ||  // HP codename for OMEN
+                                   modelUpper.Contains("DRAGONFIRE") || // HP codename variant
+                                   modelUpper.Contains("SHADOWCAT");    // HP codename variant
+                
+                if (!isOmenModel)
                 {
                     _unsupportedReason = $"GPU mode switching only supported on HP OMEN models (detected: {model})";
                     _logging.Info(_unsupportedReason);

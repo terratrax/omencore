@@ -28,6 +28,7 @@ namespace OmenCore.ViewModels
         private readonly OmenKeyService? _omenKeyService;
         private readonly OsdService? _osdService;
         private readonly HardwareMonitoringService? _hardwareMonitoringService;
+        private readonly Hardware.HpWmiBios? _wmiBios;
         
         private bool _startWithWindows;
         private bool _startMinimized;
@@ -84,6 +85,7 @@ namespace OmenCore.ViewModels
         public SettingsViewModel(LoggingService logging, ConfigurationService configService, 
             SystemInfoService systemInfoService, FanCleaningService fanCleaningService,
             BiosUpdateService biosUpdateService,
+            Hardware.HpWmiBios? wmiBios = null,
             OmenKeyService? omenKeyService = null,
             OsdService? osdService = null,
             HardwareMonitoringService? hardwareMonitoringService = null)
@@ -94,6 +96,7 @@ namespace OmenCore.ViewModels
             _systemInfoService = systemInfoService;
             _fanCleaningService = fanCleaningService;
             _biosUpdateService = biosUpdateService;
+            _wmiBios = wmiBios;
             _omenKeyService = omenKeyService;
             _osdService = osdService;
             _hardwareMonitoringService = hardwareMonitoringService;
@@ -732,6 +735,11 @@ namespace OmenCore.ViewModels
                     }
                     
                     _config.ExperimentalEcKeyboardEnabled = value;
+                    
+                    // Update the static flag immediately so EC writes work without restart
+                    Hardware.PawnIOEcAccess.EnableExperimentalKeyboardWrites = value;
+                    _logging.Info($"EC keyboard writes flag updated at runtime: {value}");
+                    
                     OnPropertyChanged();
                     SaveSettings();
                 }
@@ -1090,8 +1098,18 @@ namespace OmenCore.ViewModels
         {
             try
             {
-                // This will be wired up to HpWmiBios in App.xaml.cs
-                _logging.Info($"Battery charge limit: {(enabled ? "Enabling 80% limit" : "Disabling (full charge)")}");
+                if (_wmiBios != null)
+                {
+                    // Set battery care mode via WMI BIOS
+                    // When enabled: limit charging to 80%
+                    // When disabled: allow full charge to 100%
+                    _wmiBios.SetBatteryCareMode(enabled);
+                    _logging.Info($"Battery charge limit: {(enabled ? "Enabled 80% limit via WMI" : "Disabled (full charge) via WMI")}");
+                }
+                else
+                {
+                    _logging.Warn("Cannot apply battery charge limit: WMI BIOS not available");
+                }
             }
             catch (Exception ex)
             {

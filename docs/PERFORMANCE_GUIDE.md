@@ -140,6 +140,62 @@ When Gaming Mode is enabled:
 
 ---
 
+## ⚡ GPU Power Management
+
+### Performance Modes vs GPU Power Boost
+
+OmenCore has **two independent GPU power controls** that work together:
+
+#### 1. Performance Modes (Config-Based)
+Defined in `config.json` under `performanceModes`:
+
+```json
+{
+  "performanceModes": [
+    { "name": "Eco", "gpuPowerLimitWatts": 60 },
+    { "name": "Balanced", "gpuPowerLimitWatts": 100 },
+    { "name": "Performance", "gpuPowerLimitWatts": 150 }
+  ]
+}
+```
+
+This sets the **base GPU power limit** via software power capping.
+
+#### 2. GPU Power Boost (System Tab - HP WMI)
+Accessed via **System Control → GPU Power Boost**, this is a separate HP OMEN firmware feature:
+
+| Level | Feature | Effect |
+|-------|---------|--------|
+| **Minimum** | Base TGP only | Lower power, quieter, better battery |
+| **Medium** | Custom TGP | Balanced performance |
+| **Maximum** | Custom TGP + Dynamic Boost (PPAB) | +15W boost headroom |
+| **Extended** | PPAB+ | +25W or more (RTX 5080+) |
+
+### How They Combine
+
+```
+Effective GPU Power = Performance Mode Limit + GPU Power Boost Headroom
+
+Example:
+  Performance Mode: 150W (base limit)
+  GPU Power Boost: Maximum (+15W PPAB)
+  ─────────────────────────────────
+  Effective Max: 165W during GPU-heavy loads
+```
+
+### When to Use Each
+
+| Goal | Recommendation |
+|------|----------------|
+| Reduce heat/noise | Use Eco mode + Minimum boost |
+| Daily use | Balanced mode + Medium boost |
+| Gaming | Performance mode + Maximum boost |
+| Benchmarks | Performance mode + Extended boost |
+
+**Note:** GPU Power Boost is controlled via HP OMEN WMI BIOS commands, not software power capping. It requires a compatible OMEN laptop with the WMI interface available.
+
+---
+
 ## 🔌 Vendor SDK Integration
 
 ### Corsair iCUE SDK

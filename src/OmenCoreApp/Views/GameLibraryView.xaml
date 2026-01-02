@@ -1,0 +1,365 @@
+<UserControl x:Class="OmenCore.Views.GameLibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900"
+             Background="#1a1a1a">
+    
+    <UserControl.Resources>
+        <!-- Game Card Style -->
+        <Style x:Key="GameCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="BorderBrush" Value="#3a3a3a"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="4"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#2d2d2d"/>
+                    <Setter Property="BorderBrush" Value="#C4002A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Platform Badge Style -->
+        <Style x:Key="PlatformBadgeStyle" TargetType="Border">
+            <Setter Property="Background" Value="#333"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+
+        <!-- Profile Badge Style -->
+        <Style x:Key="ProfileBadgeStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="6,2"/>
+        </Style>
+
+        <!-- Action Button Style -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#C4002A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E00030"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#444"/>
+                    <Setter Property="Foreground" Value="#888"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+            <Setter Property="Background" Value="#333"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#444"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="🎮 Game Library" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Foreground="White"/>
+            <TextBlock Text="Automatically detected games from Steam, Epic, GOG, and more" 
+                       FontSize="12" 
+                       Foreground="#888" 
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Search Box -->
+            <Border Grid.Column="0" 
+                    Background="#252525" 
+                    BorderBrush="#3a3a3a" 
+                    BorderThickness="1" 
+                    CornerRadius="4" 
+                    Padding="8,0"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🔍" 
+                               VerticalAlignment="Center" 
+                               Foreground="#666" 
+                               Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="White"
+                             VerticalAlignment="Center"
+                             CaretBrush="White">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <VisualBrush Stretch="None" AlignmentX="Left">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock Text="Search games..." Foreground="#666" Margin="2,0,0,0"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                </Grid>
+            </Border>
+
+            <!-- Platform Filter -->
+            <ComboBox Grid.Column="1" 
+                      ItemsSource="{Binding PlatformFilters}"
+                      SelectedItem="{Binding PlatformFilter}"
+                      Width="120"
+                      Margin="0,0,12,0"
+                      Background="#252525"
+                      Foreground="White"
+                      BorderBrush="#3a3a3a"/>
+
+            <!-- Scan Button -->
+            <Button Grid.Column="2" 
+                    Command="{Binding ScanLibraryCommand}"
+                    Style="{StaticResource ActionButtonStyle}"
+                    ToolTip="Rescan all game platforms">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🔄" Margin="0,0,6,0"/>
+                    <TextBlock Text="Scan"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Game List -->
+        <Border Grid.Row="2" 
+                Background="#1e1e1e" 
+                BorderBrush="#333" 
+                BorderThickness="1" 
+                CornerRadius="8">
+            <Grid>
+                <!-- Loading Indicator -->
+                <StackPanel Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Scanning game libraries..." 
+                               Foreground="#888" 
+                               FontSize="14"
+                               Margin="0,12,0,0"/>
+                </StackPanel>
+
+                <!-- Games Grid -->
+                <ListBox ItemsSource="{Binding FilteredGames}"
+                         SelectedItem="{Binding SelectedGame}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Visibility="{Binding IsScanning, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource GameCardStyle}" 
+                                    Width="260"
+                                    Cursor="Hand">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Game Name -->
+                                    <TextBlock Grid.Row="0" 
+                                               Text="{Binding Name}" 
+                                               Foreground="White"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Name}"/>
+
+                                    <!-- Platform & Profile Badges -->
+                                    <StackPanel Grid.Row="1" 
+                                                Orientation="Horizontal" 
+                                                Margin="0,8,0,0">
+                                        <!-- Platform Badge -->
+                                        <Border Style="{StaticResource PlatformBadgeStyle}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding PlatformIcon}" 
+                                                           FontSize="10" 
+                                                           Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding Platform}" 
+                                                           Foreground="#aaa" 
+                                                           FontSize="10"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Profile Badge -->
+                                        <Border CornerRadius="4" Padding="6,2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#333"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasProfile}" Value="True">
+                                                            <Setter Property="Background" Value="#1a5c1a"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding ProfileStatusIcon}" 
+                                                           FontSize="10" 
+                                                           Margin="0,0,4,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#666"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasProfile}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock FontSize="10">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#666"/>
+                                                            <Setter Property="Text" Value="No Profile"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding HasProfile}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#7ddf7d"/>
+                                                                    <Setter Property="Text" Value="Profile"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Executable Info -->
+                                    <TextBlock Grid.Row="2" 
+                                               Text="{Binding ExecutableName}" 
+                                               Foreground="#666"
+                                               FontSize="10"
+                                               FontFamily="Consolas"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="0,6,0,0"
+                                               ToolTip="{Binding ExecutablePath}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Bottom Actions -->
+        <Grid Grid.Row="3" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Status -->
+            <TextBlock Grid.Column="0" 
+                       Text="{Binding ScanStatusText}" 
+                       Foreground="#888" 
+                       VerticalAlignment="Center"/>
+
+            <!-- Action Buttons -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Command="{Binding LaunchGameCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Margin="0,0,8,0"
+                        ToolTip="Launch selected game">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="▶" Margin="0,0,6,0"/>
+                        <TextBlock Text="Launch"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding CreateProfileCommand}"
+                        Style="{StaticResource ActionButtonStyle}"
+                        Margin="0,0,8,0"
+                        ToolTip="Create performance profile for selected game">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="➕" Margin="0,0,6,0"/>
+                        <TextBlock Text="Create Profile"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Command="{Binding EditProfileCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        ToolTip="Edit existing profile">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="✏️" Margin="0,0,6,0"/>
+                        <TextBlock Text="Edit Profile"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

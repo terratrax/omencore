@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using OmenCore.Services;
 using OmenCore.Utils;
 using OmenCore.ViewModels;
@@ -22,9 +23,20 @@ namespace OmenCore
         private IServiceProvider? _serviceProvider;
         private TaskbarIcon? _trayIcon;
         private TrayIconService? _trayIconService;
+        
+        // Track remote session state to prevent window activation during RDP
+        private static bool _isInRemoteSession;
+        private static DateTime _lastSessionUnlock = DateTime.MinValue;
+        private const int SessionUnlockGracePeriodMs = 2000;  // Ignore activations for 2s after unlock
 
         public static LoggingService Logging { get; } = new();
         public static ConfigurationService Configuration { get; } = new();
+        
+        /// <summary>
+        /// Returns true if a remote session change recently occurred that should suppress window activation.
+        /// </summary>
+        public static bool ShouldSuppressWindowActivation =>
+            _isInRemoteSession || (DateTime.Now - _lastSessionUnlock).TotalMilliseconds < SessionUnlockGracePeriodMs;
         
         /// <summary>
         /// Tray icon service instance for external access (e.g., from SettingsViewModel).
@@ -54,6 +66,9 @@ namespace OmenCore
             
             base.OnStartup(e);
             Logging.Initialize();
+            
+            // Subscribe to session switch events to prevent window activation during RDP
+            SystemEvents.SessionSwitch += OnSessionSwitch;
             
             // Apply log level from configuration
             Logging.Level = Configuration.Config.LogLevel;
@@ -306,6 +321,14 @@ namespace OmenCore
 
         private void ShowMainWindow()
         {
+            // Suppress window activation during remote session changes (e.g., RDP)
+            // This prevents the window from popping up when user connects to another PC via RDP
+            if (ShouldSuppressWindowActivation)
+            {
+                Logging.Debug("Window activation suppressed (remote session state change)");
+                return;
+            }
+            
             var mainWindow = MainWindow;
             if (mainWindow != null)
             {
@@ -318,6 +341,49 @@ namespace OmenCore
                     mainWindow.WindowState = WindowState.Normal;
                 }
                 mainWindow.Activate();
+            }
+        }
+        
+        /// <summary>
+        /// Handle Windows session state changes (RDP connect/disconnect, lock/unlock, etc.)
+        /// This prevents the window from being activated when the user starts an RDP session.
+        /// </summary>
+        private static void OnSessionSwitch(object sender, SessionSwitchEventArgs e)
+        {
+            switch (e.Reason)
+            {
+                case SessionSwitchReason.RemoteConnect:
+                    _isInRemoteSession = true;
+                    Logging.Debug($"Session switch: {e.Reason} - suppressing window activation");
+                    break;
+                    
+                case SessionSwitchReason.RemoteDisconnect:
+                    _isInRemoteSession = false;
+                    _lastSessionUnlock = DateTime.Now;
+                    Logging.Debug($"Session switch: {e.Reason} - grace period started");
+                    break;
+                    
+                case SessionSwitchReason.SessionLock:
+                    _isInRemoteSession = true;
+                    Logging.Debug($"Session switch: {e.Reason} - suppressing window activation");
+                    break;
+                    
+                case SessionSwitchReason.SessionUnlock:
+                    _isInRemoteSession = false;
+                    _lastSessionUnlock = DateTime.Now;
+                    Logging.Debug($"Session switch: {e.Reason} - grace period started");
+                    break;
+                    
+                case SessionSwitchReason.ConsoleConnect:
+                case SessionSwitchReason.ConsoleDisconnect:
+                    // Console connect/disconnect also happen during RDP - suppress briefly
+                    _lastSessionUnlock = DateTime.Now;
+                    Logging.Debug($"Session switch: {e.Reason} - grace period started");
+                    break;
+                    
+                default:
+                    Logging.Debug($"Session switch: {e.Reason}");
+                    break;
             }
         }
 
@@ -533,6 +599,9 @@ namespace OmenCore
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // Unsubscribe from session switch events
+            SystemEvents.SessionSwitch -= OnSessionSwitch;
+            
             _trayIconService?.Dispose();
             _trayIcon?.Dispose();
             

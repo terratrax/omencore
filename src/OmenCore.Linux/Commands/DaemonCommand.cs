@@ -1,5 +1,7 @@
 using System.CommandLine;
 using System.Diagnostics;
+using OmenCore.Linux.Config;
+using OmenCore.Linux.Daemon;
 
 namespace OmenCore.Linux.Commands;
 
@@ -7,11 +9,14 @@ namespace OmenCore.Linux.Commands;
 /// Daemon management command for running OmenCore as a background service.
 /// 
 /// Examples:
-///   omencore-cli daemon --start
-///   omencore-cli daemon --stop
-///   omencore-cli daemon --status
-///   omencore-cli daemon --install   (install systemd service)
-///   omencore-cli daemon --uninstall (remove systemd service)
+///   omencore-cli daemon --run              (run daemon in foreground)
+///   omencore-cli daemon --start            (start via systemd)
+///   omencore-cli daemon --stop             (stop via systemd)
+///   omencore-cli daemon --status           (show status)
+///   omencore-cli daemon --install          (install systemd service)
+///   omencore-cli daemon --uninstall        (remove systemd service)
+///   omencore-cli daemon --generate-service (print service file)
+///   omencore-cli daemon --generate-config  (print default config)
 /// </summary>
 public static class DaemonCommand
 {
@@ -24,13 +29,17 @@ public static class DaemonCommand
     {
         var command = new Command("daemon", "Manage OmenCore background daemon");
         
+        var runOption = new Option<bool>(
+            aliases: new[] { "--run", "-r" },
+            description: "Run daemon in foreground (use this in systemd service)");
+        
         var startOption = new Option<bool>(
             aliases: new[] { "--start" },
-            description: "Start the daemon");
+            description: "Start the daemon via systemd");
             
         var stopOption = new Option<bool>(
             aliases: new[] { "--stop" },
-            description: "Stop the daemon");
+            description: "Stop the daemon via systemd");
             
         var statusOption = new Option<bool>(
             aliases: new[] { "--status" },
@@ -44,29 +53,57 @@ public static class DaemonCommand
             aliases: new[] { "--uninstall" },
             description: "Uninstall systemd service");
             
-        var generateOption = new Option<bool>(
+        var generateServiceOption = new Option<bool>(
             aliases: new[] { "--generate-service" },
             description: "Print systemd service file to stdout");
         
+        var generateConfigOption = new Option<bool>(
+            aliases: new[] { "--generate-config" },
+            description: "Print default TOML configuration to stdout");
+        
+        var configOption = new Option<string?>(
+            aliases: new[] { "--config", "-c" },
+            description: "Path to TOML configuration file");
+        
+        command.AddOption(runOption);
         command.AddOption(startOption);
         command.AddOption(stopOption);
         command.AddOption(statusOption);
         command.AddOption(installOption);
         command.AddOption(uninstallOption);
-        command.AddOption(generateOption);
+        command.AddOption(generateServiceOption);
+        command.AddOption(generateConfigOption);
+        command.AddOption(configOption);
         
-        command.SetHandler(async (start, stop, status, install, uninstall, generate) =>
+        command.SetHandler(async (context) =>
         {
-            await HandleDaemonCommandAsync(start, stop, status, install, uninstall, generate);
-        }, startOption, stopOption, statusOption, installOption, uninstallOption, generateOption);
+            var run = context.ParseResult.GetValueForOption(runOption);
+            var start = context.ParseResult.GetValueForOption(startOption);
+            var stop = context.ParseResult.GetValueForOption(stopOption);
+            var status = context.ParseResult.GetValueForOption(statusOption);
+            var install = context.ParseResult.GetValueForOption(installOption);
+            var uninstall = context.ParseResult.GetValueForOption(uninstallOption);
+            var generateService = context.ParseResult.GetValueForOption(generateServiceOption);
+            var generateConfig = context.ParseResult.GetValueForOption(generateConfigOption);
+            var config = context.ParseResult.GetValueForOption(configOption);
+            
+            await HandleDaemonCommandAsync(run, start, stop, status, install, uninstall, generateService, generateConfig, config);
+        });
         
         return command;
     }
     
     private static async Task HandleDaemonCommandAsync(
-        bool start, bool stop, bool status, bool install, bool uninstall, bool generate)
+        bool run, bool start, bool stop, bool status, bool install, bool uninstall, 
+        bool generateService, bool generateConfig, string? configPath)
     {
-        if (generate)
+        if (generateConfig)
+        {
+            Console.WriteLine(OmenCoreConfig.GenerateDefaultToml());
+            return;
+        }
+        
+        if (generateService)
         {
             PrintSystemdService();
             return;
@@ -81,6 +118,12 @@ public static class DaemonCommand
         if (uninstall)
         {
             await UninstallServiceAsync();
+            return;
+        }
+        
+        if (run)
+        {
+            await RunDaemonAsync(configPath);
             return;
         }
         
@@ -100,24 +143,49 @@ public static class DaemonCommand
         await ShowStatusAsync();
     }
     
+    private static async Task RunDaemonAsync(string? configPath)
+    {
+        // Check root
+        if (Mono.Unix.Native.Syscall.getuid() != 0)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: Root privileges required to run daemon");
+            Console.ResetColor();
+            return;
+        }
+        
+        // Load configuration
+        var config = OmenCoreConfig.Load(configPath);
+        
+        // Create and run daemon
+        using var daemon = new OmenCoreDaemon(config);
+        await daemon.RunAsync();
+    }
+    
     private static void PrintSystemdService()
     {
         var exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "/usr/local/bin/omencore-cli";
         
         Console.WriteLine($@"[Unit]
 Description=OmenCore HP OMEN Laptop Control Daemon
+Documentation=https://github.com/theantipopau/omencore
 After=network.target
 
 [Service]
 Type=simple
-ExecStart={exePath} monitor --interval 2000
+ExecStart={exePath} daemon --run
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5
 User=root
 Environment=HOME=/root
 
-# Apply saved configuration on start
-ExecStartPre={exePath} config --apply
+# Security hardening
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/run /var/log /sys/kernel/debug/ec
+NoNewPrivileges=false
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target");
@@ -139,36 +207,58 @@ WantedBy=multi-user.target");
             
             var serviceContent = $@"[Unit]
 Description=OmenCore HP OMEN Laptop Control Daemon
+Documentation=https://github.com/theantipopau/omencore
 After=network.target
 
 [Service]
 Type=simple
-ExecStart={exePath} monitor --interval 2000
+ExecStart={exePath} daemon --run
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5
 User=root
 Environment=HOME=/root
 
-# Apply saved configuration on start
-ExecStartPre={exePath} config --apply
+# Security hardening
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/run /var/log /sys/kernel/debug/ec
+NoNewPrivileges=false
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target";
             
             await File.WriteAllTextAsync(SystemdServicePath, serviceContent);
             
+            // Create config directory and default config
+            var configDir = "/etc/omencore";
+            if (!Directory.Exists(configDir))
+            {
+                Directory.CreateDirectory(configDir);
+                var defaultConfig = OmenCoreConfig.GenerateDefaultToml();
+                await File.WriteAllTextAsync(Path.Combine(configDir, "config.toml"), defaultConfig);
+                Console.WriteLine($"Created default configuration at {configDir}/config.toml");
+            }
+            
             // Reload systemd and enable service
             await RunCommandAsync("systemctl", "daemon-reload");
             await RunCommandAsync("systemctl", "enable omencore.service");
             
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("✓ Systemd service installed");
             Console.WriteLine();
-            Console.WriteLine("To start the service:");
-            Console.WriteLine("  sudo systemctl start omencore");
-            Console.WriteLine();
-            Console.WriteLine("To check status:");
-            Console.WriteLine("  sudo systemctl status omencore");
+            Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║          ✓ OmenCore systemd service installed            ║");
+            Console.WriteLine("╠═══════════════════════════════════════════════════════════╣");
+            Console.WriteLine("║  Configuration: /etc/omencore/config.toml                 ║");
+            Console.WriteLine("║  Service file:  /etc/systemd/system/omencore.service      ║");
+            Console.WriteLine("╠═══════════════════════════════════════════════════════════╣");
+            Console.WriteLine("║  Commands:                                                ║");
+            Console.WriteLine("║    sudo systemctl start omencore   - Start service        ║");
+            Console.WriteLine("║    sudo systemctl stop omencore    - Stop service         ║");
+            Console.WriteLine("║    sudo systemctl status omencore  - Check status         ║");
+            Console.WriteLine("║    journalctl -u omencore -f       - View logs            ║");
+            Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
             Console.ResetColor();
         }
         catch (Exception ex)
@@ -203,6 +293,9 @@ WantedBy=multi-user.target";
             
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("✓ Systemd service uninstalled");
+            Console.WriteLine();
+            Console.WriteLine("Note: Configuration at /etc/omencore/config.toml was preserved.");
+            Console.WriteLine("      Delete manually if no longer needed.");
             Console.ResetColor();
         }
         catch (Exception ex)
@@ -220,19 +313,19 @@ WantedBy=multi-user.target";
             await RunCommandAsync("systemctl", "start omencore.service");
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("✓ Service started via systemd");
+            Console.WriteLine();
+            Console.WriteLine("Check status: sudo systemctl status omencore");
+            Console.WriteLine("View logs:    journalctl -u omencore -f");
             Console.ResetColor();
         }
         else
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Systemd service not installed. Install with: omencore-cli daemon --install");
+            Console.WriteLine("Systemd service not installed.");
             Console.WriteLine();
-            Console.WriteLine("Starting monitor in foreground instead...");
+            Console.WriteLine("Install with: sudo omencore-cli daemon --install");
+            Console.WriteLine("Or run directly: sudo omencore-cli daemon --run");
             Console.ResetColor();
-            
-            // Fall back to running monitor command
-            var args = new[] { "monitor", "--interval", "2000" };
-            await new System.CommandLine.RootCommand().InvokeAsync(args);
         }
     }
     
@@ -304,12 +397,21 @@ WantedBy=multi-user.target";
             }
         }
         
+        // Check for config files
+        var userConfig = File.Exists(OmenCoreConfig.DefaultConfigPath);
+        var systemConfig = File.Exists(OmenCoreConfig.SystemConfigPath);
+        Console.WriteLine("╠═══════════════════════════════════════════════════════════╣");
+        Console.WriteLine($"║  User config:   {(userConfig ? "✓ Found" : "✗ Not found"),-40} ║");
+        Console.WriteLine($"║  System config: {(systemConfig ? "✓ Found" : "✗ Not found"),-40} ║");
+        
         Console.WriteLine("╠═══════════════════════════════════════════════════════════╣");
         Console.WriteLine("║  Commands:                                                ║");
-        Console.WriteLine("║    daemon --install     Install systemd service           ║");
-        Console.WriteLine("║    daemon --start       Start the daemon                  ║");
-        Console.WriteLine("║    daemon --stop        Stop the daemon                   ║");
-        Console.WriteLine("║    daemon --uninstall   Remove systemd service            ║");
+        Console.WriteLine("║    daemon --install          Install systemd service      ║");
+        Console.WriteLine("║    daemon --start            Start via systemd            ║");
+        Console.WriteLine("║    daemon --stop             Stop via systemd             ║");
+        Console.WriteLine("║    daemon --run              Run in foreground            ║");
+        Console.WriteLine("║    daemon --generate-config  Print default config         ║");
+        Console.WriteLine("║    daemon --uninstall        Remove systemd service       ║");
         Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
         Console.WriteLine();
     }

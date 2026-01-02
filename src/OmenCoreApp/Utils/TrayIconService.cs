@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -37,6 +38,12 @@ namespace OmenCore.Utils
         private string _currentPerformanceMode = "Balanced";
         private bool _disposed;
         private readonly ConfigurationService? _configService;
+        
+        // Throttling to prevent flicker during system events (brightness keys, etc.)
+        // Use Interlocked for thread-safe access from timer callback
+        private int _isUpdatingIcon = 0; // 0 = false, 1 = true (for Interlocked)
+        private long _lastIconUpdateTicks = 0;
+        private const int MinIconUpdateIntervalMs = 500;
 
         public event Action<string>? FanModeChangeRequested;
         public event Action<string>? PerformanceModeChangeRequested;
@@ -358,6 +365,15 @@ namespace OmenCore.Utils
                 return;
             }
 
+            // Throttle updates to prevent flicker during system events (brightness keys, etc.)
+            // Use Interlocked for thread-safe check-and-set
+            var lastTicks = Interlocked.Read(ref _lastIconUpdateTicks);
+            var timeSinceLastUpdate = (DateTime.UtcNow.Ticks - lastTicks) / TimeSpan.TicksPerMillisecond;
+            if (Interlocked.CompareExchange(ref _isUpdatingIcon, 1, 0) != 0 || timeSinceLastUpdate < MinIconUpdateIntervalMs)
+            {
+                return;
+            }
+
             try
             {
                 var cpuTemp = _latestSample.CpuTemperatureC;
@@ -411,6 +427,11 @@ namespace OmenCore.Utils
             catch (Exception ex)
             {
                 App.Logging.Warn($"Failed to update tray display: {ex.Message}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _lastIconUpdateTicks, DateTime.UtcNow.Ticks);
+                Interlocked.Exchange(ref _isUpdatingIcon, 0);
             }
         }
 

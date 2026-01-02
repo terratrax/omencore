@@ -105,12 +105,22 @@ namespace OmenCore.Services
                         var model = _cachedInfo.Model.ToLowerInvariant();
                         var isHp = manufacturer.Contains("hp") || manufacturer.Contains("hewlett");
                         
-                        _cachedInfo.IsHpOmen = isHp && model.Contains("omen");
+                        // Also check for generic HP motherboard names (replacement cases)
+                        // "Thetiger" is an HP internal codename used on some replaced motherboards
+                        bool hasOmenCodename = model.Contains("thetiger") || model.Contains("dragonfire") || 
+                                               model.Contains("shadowcat") || model.Contains("victusdragon");
+                        
+                        _cachedInfo.IsHpOmen = isHp && (model.Contains("omen") || hasOmenCodename);
                         _cachedInfo.IsHpVictus = isHp && model.Contains("victus");
                         _cachedInfo.IsHpSpectre = isHp && model.Contains("spectre");
                         
                         if (_cachedInfo.IsHpOmen)
-                            _logging.Info($"HP OMEN system detected: {_cachedInfo.Manufacturer} {_cachedInfo.Model}");
+                        {
+                            if (hasOmenCodename && !model.Contains("omen"))
+                                _logging.Info($"HP OMEN system detected (via codename): {_cachedInfo.Manufacturer} {_cachedInfo.Model}");
+                            else
+                                _logging.Info($"HP OMEN system detected: {_cachedInfo.Manufacturer} {_cachedInfo.Model}");
+                        }
                         else if (_cachedInfo.IsHpVictus)
                             _logging.Info($"HP Victus system detected: {_cachedInfo.Manufacturer} {_cachedInfo.Model}");
                         else if (_cachedInfo.IsHpSpectre)

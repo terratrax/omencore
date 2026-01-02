@@ -271,6 +271,12 @@ namespace OmenCore.Models
         
         /// <summary>Show GPU memory usage</summary>
         public bool ShowVramUsage { get; set; } = false;
+        
+        /// <summary>Show toast notifications when mode changes (fan profile, performance mode, etc.)</summary>
+        public bool ShowModeChangeNotifications { get; set; } = true;
+        
+        /// <summary>Use RTSS (RivaTuner) for accurate FPS data when available</summary>
+        public bool UseRtssForFps { get; set; } = true;
     }
     
     /// <summary>

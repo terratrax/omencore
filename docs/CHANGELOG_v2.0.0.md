@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1-beta] - 2026-01-01
+
+### Added
+
+#### 🐧 Linux Daemon
+Full background service support for Linux:
+- **Daemon mode** (`omencore-cli daemon --run`) - Background service with fan curve engine
+- **systemd integration** - Auto-generated service file with `daemon --install`
+- **TOML configuration** - `/etc/omencore/config.toml` with full settings
+- **Automatic fan curves** - Temperature-based fan speed control with hysteresis
+- **PID file & signal handling** - Graceful shutdown, config reload support
+- **Security hardening** - ProtectSystem=strict, PrivateTmp, read-only home
+
+#### 📊 RTSS Integration
+Real FPS monitoring via RivaTuner Statistics Server:
+- **Shared memory integration** - Reads RTSS frame data without game hooks
+- **Full metrics**: Instant FPS, average, min/max, 1% low, frametime
+- **Process detection** - Automatically shows data for active game
+- **Graceful fallback** - Works without RTSS (returns empty data)
+
+#### 🔔 Toast Notifications
+Mode change notifications for better UX:
+- **Fan profile changes** - Shows toast when switching profiles
+- **Performance mode changes** - Notifies on mode switch
+- **GPU power changes** - Toast for power limit adjustments
+- **Keyboard lighting** - Notifies on color/brightness changes
+- **Auto-dismiss** - Fades out after 2.5 seconds
+- **Config option** - `ShowModeChangeNotifications` in OSD settings
+
+### Changed
+- **OsdSettings** - Added `ShowModeChangeNotifications` and `UseRtssForFps` options
+- **Linux CLI version** - Updated to v2.0.1
+
+### Technical
+- Added `Tomlyn` package for TOML config parsing (Linux)
+- New services: `RtssIntegrationService`, `ToastNotificationService`
+- New Linux classes: `OmenCoreConfig`, `FanCurveEngine`, `OmenCoreDaemon`
+
+---
+
 ## [2.0.0-beta] - 2026-01-01
 
 ### Added
