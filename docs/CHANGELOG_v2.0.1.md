@@ -120,8 +120,16 @@ New files:
 
 #### 🎚️ Fan Smoothing UI Alignment
 - **Issue:** Fan smoothing labels (Duration/Step) were misaligned in the Fan Control view
-- **Fix:** Set consistent `Width="160"` on both label TextBlocks for proper vertical alignment
+- **Fix:** Reorganized layout to use proper vertical StackPanel instead of overlapping elements with margin hacks
 - **Files changed:** `FanControlView.xaml`
+
+#### 💥 Startup Crash Due to Missing XAML Resources
+- **Issue:** App crashed on startup with `XamlParseException` - missing StaticResource definitions
+- **Fix:** Added missing resources to `ModernStyles.xaml` and `App.xaml`:
+  - `Headline` text style
+  - `BooleanToVisibilityConverter` (alias for `BoolToVisibility`)
+  - `ModernListView` style for ListView controls
+- **Files changed:** `ModernStyles.xaml`, `App.xaml`
 
 #### 🐧 Cross-Platform Registry Warning
 - **Issue:** `GameLibraryService` used Registry calls that caused warnings on Linux builds

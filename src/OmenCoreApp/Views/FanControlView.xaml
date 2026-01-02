@@ -182,32 +182,36 @@
                         </StackPanel>
                     </Border>
                     
-                    <!-- Save Custom Preset -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <TextBox Text="{Binding CustomPresetName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" 
-                                 Style="{StaticResource ModernTextBox}" 
-                                 Width="140"
-                                 Height="36"
-                                 FontSize="12"
-                                 Padding="10,8"
-                                 VerticalContentAlignment="Center"
-                                 ToolTip="Name for your custom preset"/>
-                        <Button Command="{Binding SaveCustomPresetCommand}" 
-                                Style="{StaticResource ModernButton}" 
-                                Height="36"
-                                Padding="12,0"
-                                Margin="8,0,0,0"
-                                ToolTip="Save current curve as a custom preset">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconExport}" Width="12" Height="12" Fill="{StaticResource TextPrimaryBrush}" Stretch="Uniform" Margin="0,0,6,0"/>
-                                <TextBlock Text="Save" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                    <!-- Save Custom Preset + Fan Transition Settings -->
+                    <StackPanel Grid.Column="1" Orientation="Vertical">
+                        <!-- Save Custom Preset Row -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Text="{Binding CustomPresetName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" 
+                                     Style="{StaticResource ModernTextBox}" 
+                                     Width="140"
+                                     Height="36"
+                                     FontSize="12"
+                                     Padding="10,8"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="Name for your custom preset"/>
+                            <Button Command="{Binding SaveCustomPresetCommand}" 
+                                    Style="{StaticResource ModernButton}" 
+                                    Height="36"
+                                    Padding="12,0"
+                                    Margin="8,0,0,0"
+                                    ToolTip="Save current curve as a custom preset">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource IconExport}" Width="12" Height="12" Fill="{StaticResource TextPrimaryBrush}" Stretch="Uniform" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Save" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
 
-                    <!-- Fan Transition Settings -->
-                    <StackPanel Grid.Column="1" Orientation="Vertical" Margin="12,44,0,0">
-                        <CheckBox Content="Immediate apply on Save/Apply" IsChecked="{Binding ImmediateApplyOnApply, Mode=TwoWay}" ToolTip="When enabled, saving or applying presets will immediately apply the fan changes, bypassing smoothing/hysteresis."/>
+                        <!-- Fan Transition Settings -->
+                        <CheckBox Content="Immediate apply on Save/Apply" 
+                                  IsChecked="{Binding ImmediateApplyOnApply, Mode=TwoWay}" 
+                                  Margin="0,12,0,0"
+                                  ToolTip="When enabled, saving or applying presets will immediately apply the fan changes, bypassing smoothing/hysteresis."/>
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
                             <TextBlock Text="Smoothing duration (ms):" VerticalAlignment="Center" Style="{StaticResource Caption}" Width="160" Margin="0,0,8,0"/>
                             <TextBox Text="{Binding SmoothingDurationMs, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Width="80" Style="{StaticResource ModernTextBox}"/>

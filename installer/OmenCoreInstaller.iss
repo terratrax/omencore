@@ -1,6 +1,6 @@
 #define MyAppName "OmenCore"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.5.0-beta4"
+  #define MyAppVersion "2.0.1-beta"
 #endif
 #define MyAppPublisher "OmenCore Project"
 #define MyAppExeName "OmenCore.exe"
