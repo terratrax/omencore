@@ -15,6 +15,7 @@
             <SolidColorBrush x:Key="ChromeBrush" Color="{StaticResource OmenGray}" />
             <BitmapImage x:Key="AppLogo" UriSource="pack://application:,,,/logo.png" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" xmlns:local="clr-namespace:OmenCore.Utils" />
             <local:InverseBooleanConverter x:Key="InverseBooleanConverter" xmlns:local="clr-namespace:OmenCore.Utils" />
             <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" xmlns:local="clr-namespace:OmenCore.Utils" />
